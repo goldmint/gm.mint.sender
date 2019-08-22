@@ -1,0 +1,9 @@
+FROM alpine:latest
+
+RUN apk add --no-cache ca-certificates 
+
+WORKDIR /app
+COPY build/bin/sender-linux/sender-amd64 ./sender
+
+WORKDIR /wd
+CMD ["/app/sender"]

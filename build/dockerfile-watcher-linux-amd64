@@ -1,0 +1,9 @@
+FROM alpine:latest
+
+RUN apk add --no-cache ca-certificates 
+
+WORKDIR /app
+COPY build/bin/watcher-linux/watcher-amd64 ./watcher
+
+WORKDIR /wd
+CMD ["/app/watcher"]
