@@ -19,7 +19,7 @@ Run the service:
   --dsn "user:password@tcp(localhost:3306)/mint_sender?collation=utf8_general_ci&timeout=10s&readTimeout=60s&writeTimeout=60s"
 ```
 
-[Nats messages](https://github.com/void616/gm-mint-sender/tree/master/pkg/watcher/nats/wallet)
+[Nats messages](pkg/watcher/nats/wallet/README.md)
 
 
 
@@ -52,7 +52,7 @@ Run the service:
   --dsn "user:password@tcp(localhost:3306)/mint_sender?collation=utf8_general_ci&timeout=10s&readTimeout=60s&writeTimeout=60s"
 ```
 
-[Nats messages](https://github.com/void616/gm-mint-sender/tree/master/pkg/sender/nats/sender)
+[Nats messages](pkg/sender/nats/sender/README.md)
 
 
 
@@ -108,7 +108,8 @@ make TARGETS="watcher/windows/amd64/ sender/windows/amd64/"
 
 ## Testing
 
-Setup MySQL database, run Nats, run Mint services and then run `go run cmd/testcli/main.go` to interact with the services.
+Setup MySQL database, run Nats, run Mint services and then run `go run cmd/testcli/main.go` to interact with the services. \
+![Test Cli](docs/testcli.png)
 
 ### Code test
 Nats transport tests are require running Nats server (localhost:4222 by default). \
