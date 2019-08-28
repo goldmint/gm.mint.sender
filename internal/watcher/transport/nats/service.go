@@ -1,8 +1,6 @@
 package nats
 
 import (
-	"strings"
-
 	"github.com/prometheus/client_golang/prometheus"
 
 	gonats "github.com/nats-io/go-nats"
@@ -38,10 +36,6 @@ func New(
 	mtxQueueGauge *prometheus.GaugeVec,
 	logger *logrus.Entry,
 ) (*Service, func(), error) {
-	if subjPrefix != "" && !strings.HasSuffix(subjPrefix, ".") {
-		subjPrefix = subjPrefix + "."
-	}
-
 	natsConnection, err := gonats.Connect(
 		url,
 		gonats.Name("mint_watcher"),
@@ -50,8 +44,13 @@ func New(
 	if err != nil {
 		return nil, nil, err
 	}
-
-	logger.Infof("Connected to %v", url)
+	natsConnection.SetReconnectHandler(func(_ *gonats.Conn) {
+		logger.Warnf("Nats reconnected: %v", url)
+	})
+	natsConnection.SetDisconnectHandler(func(_ *gonats.Conn) {
+		logger.Warnf("Nats disconnected: %v", url)
+	})
+	logger.Infof("Nats connected: %v", url)
 
 	f := &Service{
 		logger:             logger,

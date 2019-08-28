@@ -37,7 +37,7 @@ func (s *Service) Task(token *gotask.Token) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		s.logger.Infof("Listen on port %v", s.port)
+		s.logger.Infof("Serving metrics on port %v", s.port)
 		err := server.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
 			s.logger.WithError(err).Fatal("Failed to setup server")

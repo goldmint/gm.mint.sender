@@ -11,6 +11,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"unicode"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -54,8 +55,7 @@ func main() {
 	// flags
 	var (
 		// log
-		logVerbose = flag.Bool("verbose", false, "More logs")
-		logDebug   = flag.Bool("debug", false, "Even more logs")
+		logLevel   = flag.String("log", "info", "Log level: fatal|error|warn|info|debug|trace")
 		logJSON    = flag.Bool("json", false, "Log in Json format")
 		logNoColor = flag.Bool("nocolor", false, "Disable colorful log")
 		// keys
@@ -64,7 +64,7 @@ func main() {
 		sumusNodes flagArray
 		// db
 		dbDSN         = flag.String("dsn", "", "Database connection string")
-		dbTablePrefix = flag.String("table", "", "Database table prefix")
+		dbTablePrefix = flag.String("table", "sender", "Database table prefix")
 		// nats
 		natsURL        = flag.String("nats", "localhost:4222", "Nats server endpoint")
 		natsSubjPrefix = flag.String("nats-subj", "", "Prefix for Nats messages subject")
@@ -78,27 +78,32 @@ func main() {
 	logger = logrus.New()
 	var tasksLogger gotask.Logger
 	{
+		lvl, err := logrus.ParseLevel(*logLevel)
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to parse logger level")
+		}
 		logger.Out = os.Stdout
-		logger.Level = logrus.InfoLevel
-		if *logJSON {
+		logger.Level = lvl
+
+		// format
+		switch {
+		case *logJSON:
 			logger.Formatter = &logrus.JSONFormatter{
 				TimestampFormat: time.RFC3339,
 			}
-		} else {
+		default:
 			logger.Formatter = &logrus.TextFormatter{
 				FullTimestamp:   true,
 				ForceColors:     !*logNoColor,
 				TimestampFormat: time.RFC3339,
 			}
 		}
-		if *logVerbose {
-			logger.Level = logrus.DebugLevel
-		}
-		if *logDebug {
-			logger.Level = logrus.TraceLevel
-			tasksLogger = &taskLogrusLogger{logger: logger}
-		}
+
+		// trace level tweaks
 		if logger.Level >= logrus.TraceLevel {
+			// gotask logs
+			tasksLogger = &taskLogrusLogger{logger: logger}
+			// log callers
 			logger.SetReportCaller(true)
 		}
 	}
@@ -106,10 +111,12 @@ func main() {
 	logger.Infof("Version: %v", version.Version())
 
 	// wd
-	if wd, err := os.Getwd(); err != nil {
-		logger.WithError(err).Fatal("Failed to get working dir")
-	} else {
-		logger.Debugf("Working dir: %v", wd)
+	{
+		wd, err := os.Getwd()
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to get working dir")
+		}
+		logger.Infof("Working dir: %v", wd)
 	}
 
 	// read sender private keys, make senders
@@ -142,12 +149,9 @@ func main() {
 	// database
 	var dao db.DAO
 	{
-		*dbTablePrefix = strings.TrimSpace(*dbTablePrefix)
+		*dbTablePrefix = formatPrefix(*dbTablePrefix, "_")
 		if *dbTablePrefix == "" {
 			logger.Fatal("Please specify database table prefix")
-		}
-		if !strings.HasSuffix(*dbTablePrefix, "_") && !strings.HasSuffix(*dbTablePrefix, "-") {
-			*dbTablePrefix = *dbTablePrefix + "_"
 		}
 
 		db, err := mysql.New(*dbDSN, *dbTablePrefix, false, 16*1024*1024)
@@ -163,20 +167,17 @@ func main() {
 		if !dao.Available() {
 			logger.WithError(err).Fatal("Failed to ping DB")
 		}
+		logger.Info("Connected to DB")
+
+		db.DB.LogMode(logger.Level >= logrus.TraceLevel)
 
 		// migration
 		{
-			if *logVerbose {
-				db.DB.LogMode(true)
-			}
 			opts := gormigrate.DefaultOptions
 			opts.TableName = *dbTablePrefix + "dbmigrations"
 			mig := gormigrate.New(db.DB, opts, mysql.Migrations)
 			if err := mig.Migrate(); err != nil {
 				logger.WithError(err).Fatal("Failed to apply DB migration")
-			}
-			if *logVerbose {
-				db.DB.LogMode(false)
 			}
 		}
 	}
@@ -309,9 +310,11 @@ func main() {
 	// parser transactions chan
 	parsedTX := make(chan *blockparser.Transaction, 256)
 	defer close(parsedTX)
+
 	// filtered transactions chan
 	filteredTX := make(chan *blockparser.Transaction, 256)
 	defer close(filteredTX)
+
 	// a pair of chans to add/remove wallets to/from filter
 	walletToTrack, walletToUntrack := make(chan sumuslib.PublicKey, 32), make(chan sumuslib.PublicKey, 32)
 	defer close(walletToTrack)
@@ -421,7 +424,7 @@ func main() {
 	{
 		n, cls, err := serviceNats.New(
 			*natsURL,
-			*natsSubjPrefix,
+			formatPrefix(*natsSubjPrefix, "."),
 			senderService,
 			mtxNatsRequestDuration, mtxTaskDuration, mtxQueueGauge,
 			logger.WithField("task", "nats_transport"),
@@ -588,4 +591,19 @@ func (h *logrusErrorHook) Fire(e *logrus.Entry) error {
 	}
 	go h.addError(fmt.Sprint(source), e.Level)
 	return nil
+}
+
+// ---
+
+func formatPrefix(s, delim string) string {
+	charz := []rune(strings.TrimSpace(s))
+	length := len(charz)
+	switch {
+	case length == 0:
+		return ""
+	case unicode.IsDigit(charz[length-1]) || !unicode.IsNumber(charz[length-1]):
+		return string(charz) + delim
+	default:
+		return string(charz)
+	}
 }
