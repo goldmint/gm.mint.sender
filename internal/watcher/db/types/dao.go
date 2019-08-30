@@ -4,8 +4,8 @@ import (
 	sumuslib "github.com/void616/gm-sumuslib"
 )
 
-// Wallet model
-type Wallet struct {
-	Service   string
+// WalletServices model
+type WalletServices struct {
+	Services  []string
 	PublicKey sumuslib.PublicKey
 }

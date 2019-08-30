@@ -7,13 +7,13 @@ import (
 )
 
 var (
-	goldMinFixed     = amount.NewFloatString("0.00002")
-	goldMaxFixed     = amount.NewFloatString("0.002")
-	mntFixed         = amount.NewFloatString("0.02")
-	mntGradient10    = amount.NewFloatString("10")
-	mntGradient1000  = amount.NewFloatString("1000")
-	mntGradient10000 = amount.NewFloatString("10000")
-	mntPerByte       = amount.NewFloatString("0.004")
+	goldMinFixed     = amount.MustFromString("0.00002")
+	goldMaxFixed     = amount.MustFromString("0.002")
+	mntFixed         = amount.MustFromString("0.02")
+	mntGradient10    = amount.MustFromString("10")
+	mntGradient1000  = amount.MustFromString("1000")
+	mntGradient10000 = amount.MustFromString("10000")
+	mntPerByte       = amount.MustFromString("0.004")
 )
 
 // GoldFee calculation
@@ -51,19 +51,19 @@ func GoldFee(g *amount.Amount, m *amount.Amount) *amount.Amount {
 		ret.Set(goldMinFixed.Value)
 	}
 
-	return amount.NewBig(ret)
+	return amount.FromBig(ret)
 }
 
 // MntFee calculation
 func MntFee(m *amount.Amount) *amount.Amount {
-	return amount.NewAmount(mntFixed)
+	return amount.FromAmount(mntFixed)
 }
 
 // UserDataFee calculation
 func UserDataFee(l uint32) *amount.Amount {
 	ret := big.NewInt(int64(l))
 	ret.Mul(ret, mntPerByte.Value)
-	return amount.NewBig(ret)
+	return amount.FromBig(ret)
 }
 
 // ---

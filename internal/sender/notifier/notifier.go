@@ -5,6 +5,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/void616/gm-mint-sender/internal/sender/db"
 	sumuslib "github.com/void616/gm-sumuslib"
+	"github.com/void616/gm-sumuslib/amount"
 )
 
 const itemsPerShot = 50
@@ -21,7 +22,15 @@ type Notifier struct {
 
 // Transporter delivers notifications or fail with an error
 type Transporter interface {
-	PublishSentEvent(id string, success bool, err string, tx sumuslib.Digest) bool
+	PublishSentEvent(
+		success bool,
+		err string,
+		service, requestID string,
+		to sumuslib.PublicKey,
+		token sumuslib.Token,
+		amo *amount.Amount,
+		digest *sumuslib.Digest,
+	) error
 }
 
 // New Notifier instance

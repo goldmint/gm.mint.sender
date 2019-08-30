@@ -46,8 +46,8 @@ func WalletState(c *conn.Conn, address string) (state WalletStateResult, code Er
 	code, err = ECUnclassified, nil
 	state = WalletStateResult{
 		Balance: WalletBalanceResult{
-			Gold: amount.NewInteger(0),
-			Mnt:  amount.NewInteger(0),
+			Gold: amount.FromInteger(0),
+			Mnt:  amount.FromInteger(0),
 		},
 	}
 
@@ -81,7 +81,7 @@ func WalletState(c *conn.Conn, address string) (state WalletStateResult, code Er
 	balance := []BalanceItem{}
 	if perr := json.Unmarshal(res.Balance, &balance); perr == nil {
 		for _, v := range balance {
-			if parsed := amount.NewFloatString(v.Amount); parsed != nil {
+			if parsed, err := amount.FromString(v.Amount); err == nil {
 				if token, perr := sumuslib.ParseToken(v.AssetCode); perr == nil {
 					switch token {
 					case sumuslib.TokenMNT:

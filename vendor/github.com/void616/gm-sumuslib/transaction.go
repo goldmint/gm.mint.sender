@@ -51,7 +51,7 @@ func ParseTransaction(s string) (Transaction, error) {
 			return i, nil
 		}
 	}
-	return 0, fmt.Errorf("Unknown transaction name `%v`", s)
+	return 0, fmt.Errorf("unknown transaction name `%v`", s)
 }
 
 // ValidTransaction as uint16

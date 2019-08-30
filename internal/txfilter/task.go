@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/void616/gm-mint-sender/internal/blockparser"
-	sumuslib "github.com/void616/gm-sumuslib"
 	"github.com/void616/gotask"
 )
 
@@ -77,8 +76,9 @@ func (f *Filter) Task(token *gotask.Token) {
 			for !leave {
 				select {
 				case pubkey := <-f.add:
-					f.addWallet(pubkey)
-					f.logger.Debugf("Wallet %v added to ROI", sumuslib.Pack58(pubkey[:]))
+					if f.addWallet(pubkey) {
+						f.logger.Debugf("Wallet %v added to ROI", pubkey.StringMask())
+					}
 				default:
 					leave = true
 				}
@@ -91,8 +91,9 @@ func (f *Filter) Task(token *gotask.Token) {
 			for !leave {
 				select {
 				case pubkey := <-f.remove:
-					f.removeWallet(pubkey)
-					f.logger.Debugf("Wallet %v removed from ROI", sumuslib.Pack58(pubkey[:]))
+					if f.removeWallet(pubkey) {
+						f.logger.Debugf("Wallet %v removed from ROI", pubkey.StringMask())
+					}
 				default:
 					leave = true
 				}

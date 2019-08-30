@@ -20,8 +20,9 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 // AddRemoveRequest is a request to the service to add or remove a wallet by it's public key
 type AddRemoveRequest struct {
-	Pubkey               []string `protobuf:"bytes,1,rep,name=pubkey,proto3" json:"pubkey,omitempty"`
-	Add                  bool     `protobuf:"varint,2,opt,name=add,proto3" json:"add,omitempty"`
+	Service              string   `protobuf:"bytes,1,opt,name=service,proto3" json:"service,omitempty"`
+	PublicKey            []string `protobuf:"bytes,2,rep,name=publicKey,proto3" json:"publicKey,omitempty"`
+	Add                  bool     `protobuf:"varint,3,opt,name=add,proto3" json:"add,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -31,7 +32,7 @@ func (m *AddRemoveRequest) Reset()         { *m = AddRemoveRequest{} }
 func (m *AddRemoveRequest) String() string { return proto.CompactTextString(m) }
 func (*AddRemoveRequest) ProtoMessage()    {}
 func (*AddRemoveRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_wallet_050a3a384059b35e, []int{0}
+	return fileDescriptor_wallet_4db1f5ff11892ccf, []int{0}
 }
 func (m *AddRemoveRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AddRemoveRequest.Unmarshal(m, b)
@@ -51,9 +52,16 @@ func (m *AddRemoveRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_AddRemoveRequest proto.InternalMessageInfo
 
-func (m *AddRemoveRequest) GetPubkey() []string {
+func (m *AddRemoveRequest) GetService() string {
 	if m != nil {
-		return m.Pubkey
+		return m.Service
+	}
+	return ""
+}
+
+func (m *AddRemoveRequest) GetPublicKey() []string {
+	if m != nil {
+		return m.PublicKey
 	}
 	return nil
 }
@@ -78,7 +86,7 @@ func (m *AddRemoveReply) Reset()         { *m = AddRemoveReply{} }
 func (m *AddRemoveReply) String() string { return proto.CompactTextString(m) }
 func (*AddRemoveReply) ProtoMessage()    {}
 func (*AddRemoveReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_wallet_050a3a384059b35e, []int{1}
+	return fileDescriptor_wallet_4db1f5ff11892ccf, []int{1}
 }
 func (m *AddRemoveReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AddRemoveReply.Unmarshal(m, b)
@@ -112,71 +120,79 @@ func (m *AddRemoveReply) GetError() string {
 	return ""
 }
 
-// RefilledEvent is an event from the service notifying about a wallet refilling transaction
-type RefilledEvent struct {
-	Pubkey               string   `protobuf:"bytes,1,opt,name=pubkey,proto3" json:"pubkey,omitempty"`
-	Token                string   `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
-	Amount               string   `protobuf:"bytes,3,opt,name=amount,proto3" json:"amount,omitempty"`
-	Transaction          string   `protobuf:"bytes,4,opt,name=transaction,proto3" json:"transaction,omitempty"`
+// RefillEvent is an event from the service notifying about a wallet refilling transaction
+type RefillEvent struct {
+	Service              string   `protobuf:"bytes,1,opt,name=service,proto3" json:"service,omitempty"`
+	PublicKey            string   `protobuf:"bytes,2,opt,name=publicKey,proto3" json:"publicKey,omitempty"`
+	Token                string   `protobuf:"bytes,3,opt,name=token,proto3" json:"token,omitempty"`
+	Amount               string   `protobuf:"bytes,4,opt,name=amount,proto3" json:"amount,omitempty"`
+	Transaction          string   `protobuf:"bytes,5,opt,name=transaction,proto3" json:"transaction,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *RefilledEvent) Reset()         { *m = RefilledEvent{} }
-func (m *RefilledEvent) String() string { return proto.CompactTextString(m) }
-func (*RefilledEvent) ProtoMessage()    {}
-func (*RefilledEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_wallet_050a3a384059b35e, []int{2}
+func (m *RefillEvent) Reset()         { *m = RefillEvent{} }
+func (m *RefillEvent) String() string { return proto.CompactTextString(m) }
+func (*RefillEvent) ProtoMessage()    {}
+func (*RefillEvent) Descriptor() ([]byte, []int) {
+	return fileDescriptor_wallet_4db1f5ff11892ccf, []int{2}
 }
-func (m *RefilledEvent) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_RefilledEvent.Unmarshal(m, b)
+func (m *RefillEvent) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RefillEvent.Unmarshal(m, b)
 }
-func (m *RefilledEvent) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_RefilledEvent.Marshal(b, m, deterministic)
+func (m *RefillEvent) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RefillEvent.Marshal(b, m, deterministic)
 }
-func (dst *RefilledEvent) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RefilledEvent.Merge(dst, src)
+func (dst *RefillEvent) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RefillEvent.Merge(dst, src)
 }
-func (m *RefilledEvent) XXX_Size() int {
-	return xxx_messageInfo_RefilledEvent.Size(m)
+func (m *RefillEvent) XXX_Size() int {
+	return xxx_messageInfo_RefillEvent.Size(m)
 }
-func (m *RefilledEvent) XXX_DiscardUnknown() {
-	xxx_messageInfo_RefilledEvent.DiscardUnknown(m)
+func (m *RefillEvent) XXX_DiscardUnknown() {
+	xxx_messageInfo_RefillEvent.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_RefilledEvent proto.InternalMessageInfo
+var xxx_messageInfo_RefillEvent proto.InternalMessageInfo
 
-func (m *RefilledEvent) GetPubkey() string {
+func (m *RefillEvent) GetService() string {
 	if m != nil {
-		return m.Pubkey
+		return m.Service
 	}
 	return ""
 }
 
-func (m *RefilledEvent) GetToken() string {
+func (m *RefillEvent) GetPublicKey() string {
+	if m != nil {
+		return m.PublicKey
+	}
+	return ""
+}
+
+func (m *RefillEvent) GetToken() string {
 	if m != nil {
 		return m.Token
 	}
 	return ""
 }
 
-func (m *RefilledEvent) GetAmount() string {
+func (m *RefillEvent) GetAmount() string {
 	if m != nil {
 		return m.Amount
 	}
 	return ""
 }
 
-func (m *RefilledEvent) GetTransaction() string {
+func (m *RefillEvent) GetTransaction() string {
 	if m != nil {
 		return m.Transaction
 	}
 	return ""
 }
 
-// RefilledEventReply is a reply for RefilledEvent
-type RefilledEventReply struct {
+// RefillEventReply is a reply for RefilledEvent
+type RefillEventReply struct {
 	Success              bool     `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
 	Error                string   `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -184,38 +200,38 @@ type RefilledEventReply struct {
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *RefilledEventReply) Reset()         { *m = RefilledEventReply{} }
-func (m *RefilledEventReply) String() string { return proto.CompactTextString(m) }
-func (*RefilledEventReply) ProtoMessage()    {}
-func (*RefilledEventReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_wallet_050a3a384059b35e, []int{3}
+func (m *RefillEventReply) Reset()         { *m = RefillEventReply{} }
+func (m *RefillEventReply) String() string { return proto.CompactTextString(m) }
+func (*RefillEventReply) ProtoMessage()    {}
+func (*RefillEventReply) Descriptor() ([]byte, []int) {
+	return fileDescriptor_wallet_4db1f5ff11892ccf, []int{3}
 }
-func (m *RefilledEventReply) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_RefilledEventReply.Unmarshal(m, b)
+func (m *RefillEventReply) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RefillEventReply.Unmarshal(m, b)
 }
-func (m *RefilledEventReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_RefilledEventReply.Marshal(b, m, deterministic)
+func (m *RefillEventReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RefillEventReply.Marshal(b, m, deterministic)
 }
-func (dst *RefilledEventReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RefilledEventReply.Merge(dst, src)
+func (dst *RefillEventReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RefillEventReply.Merge(dst, src)
 }
-func (m *RefilledEventReply) XXX_Size() int {
-	return xxx_messageInfo_RefilledEventReply.Size(m)
+func (m *RefillEventReply) XXX_Size() int {
+	return xxx_messageInfo_RefillEventReply.Size(m)
 }
-func (m *RefilledEventReply) XXX_DiscardUnknown() {
-	xxx_messageInfo_RefilledEventReply.DiscardUnknown(m)
+func (m *RefillEventReply) XXX_DiscardUnknown() {
+	xxx_messageInfo_RefillEventReply.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_RefilledEventReply proto.InternalMessageInfo
+var xxx_messageInfo_RefillEventReply proto.InternalMessageInfo
 
-func (m *RefilledEventReply) GetSuccess() bool {
+func (m *RefillEventReply) GetSuccess() bool {
 	if m != nil {
 		return m.Success
 	}
 	return false
 }
 
-func (m *RefilledEventReply) GetError() string {
+func (m *RefillEventReply) GetError() string {
 	if m != nil {
 		return m.Error
 	}
@@ -225,26 +241,27 @@ func (m *RefilledEventReply) GetError() string {
 func init() {
 	proto.RegisterType((*AddRemoveRequest)(nil), "wallet.AddRemoveRequest")
 	proto.RegisterType((*AddRemoveReply)(nil), "wallet.AddRemoveReply")
-	proto.RegisterType((*RefilledEvent)(nil), "wallet.RefilledEvent")
-	proto.RegisterType((*RefilledEventReply)(nil), "wallet.RefilledEventReply")
+	proto.RegisterType((*RefillEvent)(nil), "wallet.RefillEvent")
+	proto.RegisterType((*RefillEventReply)(nil), "wallet.RefillEventReply")
 }
 
-func init() { proto.RegisterFile("wallet.proto", fileDescriptor_wallet_050a3a384059b35e) }
+func init() { proto.RegisterFile("wallet.proto", fileDescriptor_wallet_4db1f5ff11892ccf) }
 
-var fileDescriptor_wallet_050a3a384059b35e = []byte{
-	// 213 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x90, 0x4d, 0x4b, 0xc4, 0x30,
-	0x10, 0x86, 0x89, 0x75, 0xab, 0x3b, 0x7e, 0xb0, 0x84, 0x45, 0x72, 0x2c, 0x39, 0xed, 0xc9, 0x8b,
-	0x57, 0x0f, 0x0a, 0xfa, 0x07, 0xf2, 0x0f, 0xd2, 0x66, 0x84, 0xd2, 0x34, 0xa9, 0xf9, 0x68, 0xe9,
-	0xbf, 0x97, 0x26, 0x16, 0xda, 0xeb, 0xde, 0xf2, 0x64, 0xde, 0x97, 0x67, 0x18, 0x78, 0x9c, 0xa4,
-	0xd6, 0x18, 0x5e, 0x07, 0x67, 0x83, 0xa5, 0x65, 0x26, 0xfe, 0x0e, 0xa7, 0x4f, 0xa5, 0x04, 0xf6,
-	0x76, 0x44, 0x81, 0xbf, 0x11, 0x7d, 0xa0, 0x2f, 0x50, 0x0e, 0xb1, 0xee, 0x70, 0x66, 0xa4, 0x2a,
-	0x2e, 0x47, 0xf1, 0x4f, 0xf4, 0x04, 0x85, 0x54, 0x8a, 0xdd, 0x54, 0xe4, 0x72, 0x2f, 0x96, 0x27,
-	0xff, 0x80, 0xe7, 0x4d, 0x7b, 0xd0, 0x33, 0x65, 0x70, 0xe7, 0x63, 0xd3, 0xa0, 0xf7, 0x8c, 0xa4,
-	0xdc, 0x8a, 0xf4, 0x0c, 0x07, 0x74, 0xce, 0xba, 0xd4, 0x3f, 0x8a, 0x0c, 0x7c, 0x82, 0x27, 0x81,
-	0x3f, 0xad, 0xd6, 0xa8, 0xbe, 0x47, 0x34, 0x7b, 0x39, 0xd9, 0xc8, 0xcf, 0x70, 0x08, 0xb6, 0x43,
-	0xb3, 0xd6, 0x13, 0x2c, 0x69, 0xd9, 0xdb, 0x68, 0x02, 0x2b, 0x72, 0x3a, 0x13, 0xad, 0xe0, 0x21,
-	0x38, 0x69, 0xbc, 0x6c, 0x42, 0x6b, 0x0d, 0xbb, 0x4d, 0xc3, 0xed, 0x17, 0xff, 0x02, 0xba, 0x13,
-	0x5f, 0xb5, 0x7e, 0x5d, 0xa6, 0x6b, 0xbe, 0xfd, 0x05, 0x00, 0x00, 0xff, 0xff, 0x78, 0xdf, 0x13,
-	0xc4, 0x5d, 0x01, 0x00, 0x00,
+var fileDescriptor_wallet_4db1f5ff11892ccf = []byte{
+	// 235 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x91, 0xcf, 0x4a, 0xc4, 0x30,
+	0x10, 0xc6, 0xc9, 0xd6, 0xd6, 0xed, 0xac, 0x48, 0x09, 0x8b, 0xe4, 0xe0, 0xa1, 0xf4, 0xd4, 0x93,
+	0x17, 0x5f, 0x40, 0x05, 0x4f, 0xde, 0xe6, 0xec, 0x25, 0x9b, 0x8e, 0x10, 0xcc, 0x26, 0x35, 0x7f,
+	0x2a, 0xfb, 0x20, 0xbe, 0xaf, 0x98, 0x5a, 0xac, 0x47, 0xbd, 0xe5, 0xf7, 0x05, 0xbe, 0xf9, 0x0d,
+	0x03, 0x17, 0xef, 0xd2, 0x18, 0x8a, 0x37, 0xa3, 0x77, 0xd1, 0xf1, 0x6a, 0xa6, 0xee, 0x19, 0x9a,
+	0xfb, 0x61, 0x40, 0x3a, 0xba, 0x89, 0x90, 0xde, 0x12, 0x85, 0xc8, 0x05, 0x9c, 0x07, 0xf2, 0x93,
+	0x56, 0x24, 0x58, 0xcb, 0xfa, 0x1a, 0x17, 0xe4, 0xd7, 0x50, 0x8f, 0xe9, 0x60, 0xb4, 0x7a, 0xa2,
+	0x93, 0xd8, 0xb4, 0x45, 0x5f, 0xe3, 0x4f, 0xc0, 0x1b, 0x28, 0xe4, 0x30, 0x88, 0xa2, 0x65, 0xfd,
+	0x16, 0xbf, 0x9e, 0xdd, 0x1d, 0x5c, 0xae, 0xda, 0x47, 0x73, 0xca, 0xdd, 0x49, 0x29, 0x0a, 0x21,
+	0x77, 0x6f, 0x71, 0x41, 0xbe, 0x87, 0x92, 0xbc, 0x77, 0x5e, 0x6c, 0xf2, 0xcc, 0x19, 0xba, 0x0f,
+	0x06, 0x3b, 0xa4, 0x17, 0x6d, 0xcc, 0xe3, 0x44, 0xf6, 0x0f, 0x6e, 0xec, 0xb7, 0xdb, 0x1e, 0xca,
+	0xe8, 0x5e, 0xc9, 0x66, 0xbb, 0x1a, 0x67, 0xe0, 0x57, 0x50, 0xc9, 0xa3, 0x4b, 0x36, 0x8a, 0xb3,
+	0x1c, 0x7f, 0x13, 0x6f, 0x61, 0x17, 0xbd, 0xb4, 0x41, 0xaa, 0xa8, 0x9d, 0x15, 0x65, 0xfe, 0x5c,
+	0x47, 0xdd, 0x03, 0x34, 0x2b, 0xad, 0x7f, 0xed, 0x76, 0xa8, 0xf2, 0x29, 0x6e, 0x3f, 0x03, 0x00,
+	0x00, 0xff, 0xff, 0xde, 0x27, 0x70, 0x42, 0x9a, 0x01, 0x00, 0x00,
 }

@@ -7,35 +7,26 @@ import (
 	"math/big"
 	"sort"
 
-	"github.com/void616/gm-sumusrpc/rpc"
-
+	"github.com/void616/gm-mint-sender/internal/sender/db/types"
 	sumuslib "github.com/void616/gm-sumuslib"
 	"github.com/void616/gm-sumuslib/amount"
 	"github.com/void616/gm-sumuslib/fee"
 	"github.com/void616/gm-sumuslib/transaction"
+	"github.com/void616/gm-sumusrpc/rpc"
 )
 
-type request struct {
-	ID          uint64
-	To          sumuslib.PublicKey
-	Amount      *amount.Amount
-	Token       sumuslib.Token
-	Sender      *sumuslib.PublicKey
-	SenderNonce *uint64
-}
-
 // processRequest signs and posts transaction
-func (s *Signer) processRequest(req *request, currentBlock *big.Int) (posted bool) {
+func (s *Signer) processRequest(snd *types.Sending, currentBlock *big.Int) (posted bool) {
 	posted = false
 
 	var sigpub sumuslib.PublicKey
 	var freshNonce bool
 
-	logger := s.logger.WithField("id", req.ID)
+	logger := s.logger.WithField("id", snd.ID)
 
 	// new tx: pick a signer
-	if req.Sender == nil {
-		p, err := s.pickSigner(req.Amount, req.Token)
+	if snd.Sender == nil {
+		p, err := s.pickSigner(snd.Amount, snd.Token)
 		if err != nil {
 			logger.WithError(err).Errorln("Failed to pick signer")
 			return false
@@ -44,29 +35,29 @@ func (s *Signer) processRequest(req *request, currentBlock *big.Int) (posted boo
 		freshNonce = true
 	} else {
 		// stale tx: find signer
-		p := *req.Sender
+		p := *snd.Sender
 		if _, ok := s.signers[p]; !ok {
-			logger.WithError(fmt.Errorf("signer %v doesn't exist", sumuslib.Pack58(p[:]))).Errorln("Failed to find signer")
+			logger.WithError(fmt.Errorf("signer %v doesn't exist", p.String())).Errorln("Failed to find signer")
 			return false
 		}
 		sigpub = p
 	}
 
 	signer := s.signers[sigpub]
-	logger = logger.WithField("signer", sumuslib.Pack58(sigpub[:]))
+	logger = logger.WithField("signer", sigpub.StringMask())
 
 	// new nonce or just repeat transaction
 	nonce := signer.nonce + 1
 	if !freshNonce {
-		nonce = *req.SenderNonce
+		nonce = *snd.SenderNonce
 	}
 	logger = logger.WithField("nonce", nonce)
 
 	// sign
 	tatx := transaction.TransferAsset{
-		Address: req.To,
-		Token:   req.Token,
-		Amount:  req.Amount,
+		Address: snd.To,
+		Token:   snd.Token,
+		Amount:  snd.Amount,
 	}
 	stx, err := tatx.Construct(signer.signer, nonce)
 	if err != nil {
@@ -82,8 +73,8 @@ func (s *Signer) processRequest(req *request, currentBlock *big.Int) (posted boo
 		if !signer.emitter {
 			defer func() {
 				if posted {
-					sub := amount.NewAmount(req.Amount)
-					switch req.Token {
+					sub := amount.FromAmount(snd.Amount)
+					switch snd.Token {
 					case sumuslib.TokenGOLD:
 						sub.Value.Add(sub.Value, fee.GoldFee(sub, signer.mnt).Value)
 						signer.gold.Value.Sub(signer.gold.Value, sub.Value)
@@ -111,7 +102,15 @@ func (s *Signer) processRequest(req *request, currentBlock *big.Int) (posted boo
 	defer conn.Close()
 
 	// save as posted
-	if err := s.dao.SetSendingPosted(req.ID, signer.public, nonce, stx.Digest, currentBlock); err != nil {
+	snd.Status = types.SendingPosted
+	snd.Sender = &sumuslib.PublicKey{}
+	*snd.Sender = signer.public
+	snd.SenderNonce = new(uint64)
+	*snd.SenderNonce = nonce
+	snd.Digest = &sumuslib.Digest{}
+	*snd.Digest = stx.Digest
+	snd.SentAtBlock = new(big.Int).Set(currentBlock)
+	if err := s.dao.UpdateSending(snd); err != nil {
 		logger.WithError(err).Errorln("Failed to mark request posted")
 		return false
 	}
@@ -120,7 +119,8 @@ func (s *Signer) processRequest(req *request, currentBlock *big.Int) (posted boo
 	reject := false
 	defer func() {
 		if reject {
-			if err := s.dao.SetSendingFailed(req.ID); err != nil {
+			snd.Status = types.SendingFailed
+			if err := s.dao.UpdateSending(snd); err != nil {
 				logger.WithError(err).Errorln("Failed to mark request failed")
 			}
 		}
@@ -190,7 +190,7 @@ func (s *Signer) pickSigner(a *amount.Amount, t sumuslib.Token) (sumuslib.Public
 			return v.public, nil
 		}
 
-		send := amount.NewAmount(a)
+		send := amount.FromAmount(a)
 		switch t {
 		case sumuslib.TokenGOLD:
 			send.Value.Add(send.Value, fee.GoldFee(send, v.mnt).Value)

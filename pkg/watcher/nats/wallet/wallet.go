@@ -4,7 +4,7 @@ package wallet
 
 const (
 	// SubjectWatch request subject
-	SubjectWatch = "watcher.watch"
-	// SubjectReceived event subject
-	SubjectReceived = "watcher.received"
+	SubjectWatch = "mintsender.watcher.watch"
+	// SubjectRefill event subject
+	SubjectRefill = "mintsender.watcher.refill"
 )

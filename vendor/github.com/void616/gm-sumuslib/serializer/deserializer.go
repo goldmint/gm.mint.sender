@@ -56,7 +56,7 @@ func (s *Deserializer) GetBytes(n uint32) []byte {
 			if uint32(cnt) == n {
 				return v
 			}
-			s.err = fmt.Errorf("Didn't read specified amount of bytes. Got %v, expected %v", cnt, n)
+			s.err = fmt.Errorf("didn't read specified amount of bytes, got %v, expected %v", cnt, n)
 		} else {
 			s.err = err
 		}
@@ -144,7 +144,7 @@ func (s *Deserializer) GetPublicKey() sumuslib.PublicKey {
 	var pub sumuslib.PublicKey
 
 	if s.err == nil {
-		b := s.GetBytes(uint32(cap(pub)))
+		b := s.GetBytes(sumuslib.PublicKeySize)
 		if b != nil {
 			copy(pub[:], b)
 		}
@@ -157,7 +157,7 @@ func (s *Deserializer) GetDigest() sumuslib.Digest {
 	var d sumuslib.Digest
 
 	if s.err == nil {
-		b := s.GetBytes(uint32(cap(d)))
+		b := s.GetBytes(sumuslib.DigestSize)
 		if b != nil {
 			copy(d[:], b)
 		}
@@ -170,7 +170,7 @@ func (s *Deserializer) GetSignature() sumuslib.Signature {
 	var sig sumuslib.Signature
 
 	if s.err == nil {
-		b := s.GetBytes(uint32(cap(sig)))
+		b := s.GetBytes(sumuslib.SignatureSize)
 		if b != nil {
 			copy(sig[:], b)
 		}
@@ -197,7 +197,7 @@ func (s *Deserializer) GetAmount() *amount.Amount {
 		strSign := ""
 		if sign > 0 {
 			if sign > 1 {
-				s.err = fmt.Errorf("Amount sign byte has invalid value: %v", sign)
+				s.err = fmt.Errorf("amount sign byte has invalid value: %v", sign)
 			}
 			strSign = "-"
 		}
@@ -223,11 +223,13 @@ func (s *Deserializer) GetAmount() *amount.Amount {
 		// try parse amount
 		if s.err == nil {
 			together := fmt.Sprintf("%v%v.%v", strSign, strInt, strFrag)
-			ret := amount.NewFloatString(together)
-			if ret != nil {
+			ret, err := amount.FromString(together)
+			if err != nil {
+				s.err = fmt.Errorf("failed to parse amount from `%v`: %v", together, err)
+			} else {
 				return ret
 			}
-			s.err = fmt.Errorf("Failed to parse amount from: %v", together)
+
 		}
 	}
 
@@ -248,7 +250,7 @@ func (s *Deserializer) shiftInt(b []byte) *big.Int {
 // Convert some kind of a shit into string: [0x78 0x56 .. 0x34 0x12] => "1234...5678"
 func unflipAmountString(b []byte) (string, error) {
 	if b == nil || len(b) == 0 {
-		return "", fmt.Errorf("Buffer is null or empty")
+		return "", fmt.Errorf("buffer is nil or empty")
 	}
 
 	// reverse array

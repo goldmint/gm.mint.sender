@@ -35,7 +35,7 @@ type TxFilter func(typ sumuslib.Transaction, outgoing bool) bool
 // New Filter instance.
 // `in` channel receives transactions. `out` channel emits filtered transactions.
 // `add` channel adds a wallet to the ROI. `remove` channel removes a wallet from the ROI.
-// `txFilter` filters transactions by type.
+// `txFilter` filters transactions by type
 func New(
 	in <-chan *blockparser.Transaction,
 	out chan<- *blockparser.Transaction,
@@ -65,7 +65,7 @@ func New(
 }
 
 // AddWallet adds a wallet to the ROI.
-// Should be used to add all known wallets before filter is started.
+// Should be used to add all known wallets before filter is started
 func (f *Filter) AddWallet(pubkey ...sumuslib.PublicKey) {
 	f.roiLock.Lock()
 	defer f.roiLock.Unlock()

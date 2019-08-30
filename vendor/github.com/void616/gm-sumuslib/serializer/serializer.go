@@ -61,7 +61,7 @@ func (s *Serializer) PutBytes(v []byte) *Serializer {
 		if err != nil {
 			s.err = err
 		} else if n != len(v) {
-			s.err = fmt.Errorf("Failed to write bytes. Written %v, expected %v", n, len(v))
+			s.err = fmt.Errorf("failed to write bytes, written %v, expected %v", n, len(v))
 		}
 	}
 	return s
@@ -128,7 +128,7 @@ func (s *Serializer) PutUint64(v uint64) *Serializer {
 func (s *Serializer) PutString64(v string) *Serializer {
 	const max = 64
 	if len(v) > max {
-		s.err = fmt.Errorf("String is too long. Got %v, expected %v", len(v), max)
+		s.err = fmt.Errorf("string is too long, got %v, expected %v", len(v), max)
 	}
 	if s.err == nil {
 		b := make([]byte, max)
@@ -145,7 +145,7 @@ func (s *Serializer) PutPublicKey(v sumuslib.PublicKey) *Serializer {
 		if err != nil {
 			s.err = err
 		} else if n != len(v) {
-			s.err = fmt.Errorf("Failed to write bytes. Written %v, expected %v", n, len(v))
+			s.err = fmt.Errorf("failed to write bytes, written %v, expected %v", n, len(v))
 		}
 	}
 	return s
@@ -160,7 +160,7 @@ func (s *Serializer) PutAmount(v *amount.Amount) *Serializer {
 
 	// limit for integer part
 	if len(v.Integer(imax)) > imax {
-		s.err = fmt.Errorf("Amount has too big integer part. Got %v, max %v", len(v.Integer(imax)), imax)
+		s.err = fmt.Errorf("amount has too big integer part, got %v, max %v", len(v.Integer(imax)), imax)
 	}
 
 	// sign
@@ -198,7 +198,7 @@ func (s *Serializer) PutAmount(v *amount.Amount) *Serializer {
 // Convert string into some kind of shit: "1234...5678" => [0x78 0x56 .. 0x34 0x12]
 func flipAmountString(s string) ([]byte, error) {
 	if (len(s) % 2) != 0 {
-		return nil, fmt.Errorf("Passed string length must be even, got %v", len(s))
+		return nil, fmt.Errorf("passed string length must be even, got %v", len(s))
 	}
 	// to the bytes
 	b, err := hex.DecodeString(s)

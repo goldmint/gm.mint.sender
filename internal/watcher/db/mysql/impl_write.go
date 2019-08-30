@@ -1,26 +1,19 @@
 package mysql
 
 import (
-	"time"
-
 	"github.com/void616/gm-mint-sender/internal/watcher/db/mysql/model"
 	"github.com/void616/gm-mint-sender/internal/watcher/db/types"
 )
 
-// PutWallet impl.
-func (d *Database) PutWallet(v *types.PutWallet) error {
+// PutWallet implementation
+func (d *Database) PutWallet(v ...*types.Wallet) error {
 	mlist := make([]*model.Wallet, 0)
-	for _, pubkey := range v.PublicKeys {
-		mlist = append(
-			mlist,
-			&model.Wallet{
-				Base: model.Base{
-					CreatedAt: time.Now().UTC(),
-					UpdatedAt: time.Now().UTC(),
-				},
-				PublicKey: append([]byte(nil), pubkey[:]...),
-			},
-		)
+	for _, w := range v {
+		m := &model.Wallet{}
+		if err := m.MapFrom(w); err != nil {
+			return err
+		}
+		mlist = append(mlist, m)
 	}
 	tx := d.Begin()
 	txok := false
@@ -40,8 +33,16 @@ func (d *Database) PutWallet(v *types.PutWallet) error {
 	return tx.Commit().Error
 }
 
-// DeleteWallet impl.
-func (d *Database) DeleteWallet(v *types.DeleteWallet) error {
+// DeleteWallet implementation
+func (d *Database) DeleteWallet(v ...*types.Wallet) error {
+	mlist := make([]*model.Wallet, 0)
+	for _, w := range v {
+		m := &model.Wallet{}
+		if err := m.MapFrom(w); err != nil {
+			return err
+		}
+		mlist = append(mlist, m)
+	}
 	tx := d.Begin()
 	txok := false
 	defer func() {
@@ -49,10 +50,8 @@ func (d *Database) DeleteWallet(v *types.DeleteWallet) error {
 			tx.Rollback()
 		}
 	}()
-	for _, pubkey := range v.PublicKeys {
-		if err := tx.Delete(&model.Wallet{
-			PublicKey: append([]byte(nil), pubkey[:]...),
-		}).Error; err != nil {
+	for _, m := range mlist {
+		if err := tx.Delete(&model.Wallet{}, "`public_key`=? AND `service`=?", m.PublicKey, m.Service).Error; err != nil {
 			return err
 		}
 	}
@@ -60,33 +59,39 @@ func (d *Database) DeleteWallet(v *types.DeleteWallet) error {
 	return tx.Commit().Error
 }
 
-// PutIncoming impl.
-func (d *Database) PutIncoming(v *types.PutIncoming) error {
-	m := &model.Incoming{
-		Base: model.Base{
-			CreatedAt: time.Now().UTC(),
-			UpdatedAt: time.Now().UTC(),
-		},
-		To:        v.To[:],
-		From:      v.From[:],
-		Amount:    v.Amount.String(),
-		Token:     uint16(v.Token),
-		Digest:    v.Digest[:],
-		Block:     v.Block.Bytes(),
-		Timestamp: v.Timestamp,
-		Sent:      false,
-	}
-	if err := d.Create(m).Error; err != nil {
-		if !d.DuplicateError(err) {
+// PutIncoming implementation
+func (d *Database) PutIncoming(v ...*types.Incoming) error {
+	mlist := make([]*model.Incoming, 0)
+	for _, w := range v {
+		m := &model.Incoming{}
+		if err := m.MapFrom(w); err != nil {
 			return err
 		}
+		mlist = append(mlist, m)
 	}
-	return nil
+	tx := d.Begin()
+	txok := false
+	defer func() {
+		if !txok {
+			tx.Rollback()
+		}
+	}()
+	for _, m := range mlist {
+		if err := tx.Create(m).Error; err != nil {
+			if !d.DuplicateError(err) {
+				return err
+			}
+		}
+	}
+	txok = true
+	return tx.Commit().Error
 }
 
-// MarkIncomingSent impl.
-func (d *Database) MarkIncomingSent(v *types.MarkIncomingSent) error {
-	return d.Model(&model.Incoming{
-		Digest: v.Digest[:],
-	}).Update("sent", v.Sent).Error
+// UpdateIncoming implementation
+func (d *Database) UpdateIncoming(v *types.Incoming) error {
+	var m = &model.Incoming{}
+	if err := m.MapFrom(v); err != nil {
+		return err
+	}
+	return d.Save(m).Error
 }

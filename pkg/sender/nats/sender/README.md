@@ -1,33 +1,41 @@
-## sender.send
+## mintsender.sender.send
 A request to send a token to an address.
-
-| Field | Type | Meaning |
-| --- | --- | --- |
-| 1 id | string | Unique request ID: 1..64 |
-| 2 pubkey | string | Destination wallet address in Base58 |
-| 3 token | string | GOLD or MNT |
-| 4 amount | string | Token amount in major units: 1.234 (18 decimal places) |
-
+```
+message {
+  string service = 1;    // Service name (to differentiate multiple requestors): 1..64
+  string id = 2;         // Unique request ID (within service): 1..64
+  string publicKey = 3;  // Destination wallet address in Base58
+  string token = 4;      // GOLD or MNT
+  string amount = 5;     // Token amount in major units: 1.234 (18 decimal places)
+}
+```
 ### Reply (ACK)
-| Field | Type | Meaning |
-| --- | --- | --- |
-| 1 success | bool | Success is true in case of success | 
-| 2 error | string | Error contains error descrition in case of failure |
+```
+message {
+  bool success = 1;  // Success is true in case of success
+  string error = 2;  // Error contains error descrition in case of failure
+}
+```
 
 ---
 
-## sender.sent
+## mintsender.sender.sent
 An event with sending completion status.
-
-| Field | Type | Meaning |
-| --- | --- | --- |
-| 1 id | string | Unique request ID: 1..64 |
-| 2 success | bool | Success is true in case of success |
-| 3 error | string | Error contains error descrition in case of failure |
-| 4 transaction | string | Digest of the refilling tx in Base58 on success or an empty string on failure |
-
+```
+message {
+  bool success = 1;        // Success is true in case of success
+  string error = 2;        // Error contains error descrition in case of failure
+  string service = 3;      // Service name (to differentiate multiple requestors): 1..64
+  string id = 4;           // Unique request ID: 1..64
+  string publicKey = 5;    // Destination wallet address in Base58 (empty on failure)
+  string token = 6;        // GOLD or MNT (empty on failure)
+  string amount = 7;       // Token amount in major units: 1.234 (18 decimal places, empty on failure)
+  string transaction = 8;  // Transaction digest in Base58 (empty on failure)
+}
+```
 ### Reply (ACK)
-| Field | Type | Meaning |
-| --- | --- | --- |
-| 1 success | bool | Success is true in case of success | 
-| 2 error | string | Error contains error descrition in case of failure |
+```
+message {
+  bool success = 1;  // Success is true in case of success
+  string error = 2;  // Error contains error descrition in case of failure
+}

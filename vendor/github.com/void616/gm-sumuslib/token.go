@@ -39,7 +39,7 @@ func ParseToken(s string) (Token, error) {
 	case "1", "commodity", "gold":
 		return TokenGOLD, nil
 	}
-	return 0, fmt.Errorf("Unknown token name `%v`", s)
+	return 0, fmt.Errorf("unknown token name `%v`", s)
 }
 
 // ValidToken as uint16

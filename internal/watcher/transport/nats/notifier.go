@@ -1,6 +1,7 @@
 package nats
 
 import (
+	"fmt"
 	"time"
 
 	proto "github.com/golang/protobuf/proto"
@@ -10,39 +11,36 @@ import (
 )
 
 // NotifyRefilling sends event
-func (s *Service) NotifyRefilling(addr sumuslib.PublicKey, t sumuslib.Token, a *amount.Amount, tx sumuslib.Digest) bool {
-	
+func (s *Service) NotifyRefilling(service string, addr sumuslib.PublicKey, t sumuslib.Token, a *amount.Amount, tx sumuslib.Digest) error {
+
 	// metrics
 	mt := time.Now()
 
-	reqModel := &walletsvc.RefilledEvent{
-		Pubkey:      sumuslib.Pack58(addr[:]),
+	reqModel := &walletsvc.RefillEvent{
+		Service:     service,
+		PublicKey:   addr.String(),
 		Token:       t.String(),
 		Amount:      a.String(),
-		Transaction: sumuslib.Pack58(tx[:]),
+		Transaction: tx.String(),
 	}
 
 	req, err := proto.Marshal(reqModel)
 	if err != nil {
-		s.logger.WithError(err).Error("Failed to marshal")
-		return false
+		return err
 	}
 
-	msg, err := s.natsConnection.Request(s.subjPrefix+walletsvc.SubjectReceived, req, time.Second*5)
+	msg, err := s.natsConnection.Request(s.subjPrefix+walletsvc.SubjectRefill, req, time.Second*5)
 	if err != nil {
-		s.logger.WithError(err).Error("Failed to send request")
-		return false
+		return err
 	}
 
-	repModel := walletsvc.RefilledEventReply{}
+	repModel := walletsvc.RefillEventReply{}
 	if err := proto.Unmarshal(msg.Data, &repModel); err != nil {
-		s.logger.WithError(err).Error("Failed to unmarshal")
-		return false
+		return err
 	}
 
 	if !repModel.GetSuccess() {
-		s.logger.Errorf("Unsuccessful reply: %v", repModel.GetError())
-		return false
+		return fmt.Errorf("service rejection: %v", repModel.GetError())
 	}
 
 	// metrics
@@ -50,5 +48,5 @@ func (s *Service) NotifyRefilling(addr sumuslib.PublicKey, t sumuslib.Token, a *
 		s.mtxTaskDuration.WithLabelValues("nats_notifier").Observe(time.Since(mt).Seconds())
 	}
 
-	return true
+	return nil
 }

@@ -1,56 +1,65 @@
 package mysql
 
 import (
-	"math/big"
+	"strings"
+	"time"
 
 	"github.com/void616/gm-mint-sender/internal/watcher/db/mysql/model"
 	"github.com/void616/gm-mint-sender/internal/watcher/db/types"
 	sumuslib "github.com/void616/gm-sumuslib"
-	"github.com/void616/gm-sumuslib/amount"
 )
 
-// ListWallets impl.
-func (d *Database) ListWallets() ([]*types.ListWalletsItem, error) {
-	m := make([]*model.Wallet, 0)
-	res := d.Find(&m)
-	if res.Error != nil {
-		return nil, res.Error
+// ListWallets implementation
+func (d *Database) ListWallets() ([]*types.WalletServices, error) {
+	mlist := make([]struct {
+		PublicKey []byte
+		Service   string
+	}, 0)
+	table := d.NewScope(&model.Wallet{}).QuotedTableName()
+	if err := d.Raw("SELECT `public_key`, GROUP_CONCAT(`service`) AS `service` FROM " + table + " GROUP BY `public_key`").Scan(&mlist).Error; err != nil {
+		return nil, err
 	}
-	list := make([]*types.ListWalletsItem, len(m))
-	for i, v := range m {
-		var pubkey sumuslib.PublicKey
-		copy(pubkey[:], v.PublicKey)
-		list[i] = &types.ListWalletsItem{
-			PublicKey: pubkey,
+	list := make([]*types.WalletServices, len(mlist))
+	for i, m := range mlist {
+		pub, err := sumuslib.BytesToPublicKey(m.PublicKey)
+		if err != nil {
+			return nil, err
+		}
+		svcs := strings.Split(m.Service, ",")
+		for j := range svcs {
+			svcs[j] = strings.TrimSpace(svcs[j])
+		}
+		list[i] = &types.WalletServices{
+			PublicKey: pub,
+			Services:  svcs,
 		}
 	}
 	return list, nil
 }
 
-// ListUnsentIncomings impl.
-func (d *Database) ListUnsentIncomings(max uint16) ([]*types.ListUnsentIncomingsItem, error) {
+// ListUnnotifiedIncomings implementation
+func (d *Database) ListUnnotifiedIncomings(max uint16) ([]*types.Incoming, error) {
 	m := make([]*model.Incoming, 0)
-	res := d.Where("`sent`=0").Limit(max).Find(&m)
+
+	res := d.
+		Model(&model.Incoming{}).
+		Where(
+			"`notified`=0 AND (`notify_at` IS NULL OR `notify_at`<=?)",
+			time.Now().UTC(),
+		).
+		Limit(max).
+		Find(&m)
 	if res.Error != nil {
 		return nil, res.Error
 	}
-	list := make([]*types.ListUnsentIncomingsItem, len(m))
+
+	list := make([]*types.Incoming, len(m))
 	for i, v := range m {
-		var vTo sumuslib.PublicKey
-		copy(vTo[:], v.To)
-		var vFrom sumuslib.PublicKey
-		copy(vFrom[:], v.From)
-		var vDigest sumuslib.Digest
-		copy(vDigest[:], v.Digest)
-		list[i] = &types.ListUnsentIncomingsItem{
-			To:        vTo,
-			From:      vFrom,
-			Amount:    amount.NewFloatString(v.Amount),
-			Token:     sumuslib.Token(v.Token),
-			Digest:    vDigest,
-			Block:     big.NewInt(0).SetBytes(v.Block),
-			Timestamp: v.Timestamp,
+		s, err := v.MapTo()
+		if err != nil {
+			return nil, err
 		}
+		list[i] = s
 	}
 	return list, nil
 }

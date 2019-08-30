@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"time"
 
-	sumuslib "github.com/void616/gm-sumuslib"
+	"github.com/void616/gm-mint-sender/internal/sender/db/types"
 	"github.com/void616/gm-sumusrpc/rpc"
 	"github.com/void616/gotask"
 )
@@ -13,7 +13,7 @@ import (
 // Task loop
 func (s *Signer) Task(token *gotask.Token) {
 
-	requests := make(chan *request, itemsPerShot*2)
+	requests := make(chan *types.Sending, itemsPerShot*2)
 	defer close(requests)
 
 	currentBlock := new(big.Int)
@@ -55,17 +55,7 @@ func (s *Signer) Task(token *gotask.Token) {
 				continue
 			}
 			for _, v := range list {
-				vFrom := sumuslib.PublicKey{}
-				copy(vFrom[:], v.From[:])
-				vNonce := v.Nonce
-				requests <- &request{
-					ID:          v.ID,
-					To:          v.To,
-					Amount:      v.Amount,
-					Token:       v.Token,
-					Sender:      &vFrom,
-					SenderNonce: &vNonce,
-				}
+				requests <- v
 			}
 			count += len(list)
 		}
@@ -79,12 +69,7 @@ func (s *Signer) Task(token *gotask.Token) {
 				continue
 			}
 			for _, v := range list {
-				requests <- &request{
-					ID:     v.ID,
-					To:     v.To,
-					Amount: v.Amount,
-					Token:  v.Token,
-				}
+				requests <- v
 			}
 			count += len(list)
 		}
@@ -107,12 +92,12 @@ func (s *Signer) Task(token *gotask.Token) {
 			select {
 			default:
 				out = true
-			case tx := <-requests:
+			case snd := <-requests:
 
 				// metrics
 				t := time.Now()
 
-				if s.processRequest(tx, currentBlock) {
+				if s.processRequest(snd, currentBlock) {
 					processed++
 				}
 

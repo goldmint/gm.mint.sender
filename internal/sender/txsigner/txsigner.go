@@ -65,7 +65,7 @@ func New(
 		pubkey := ss.PublicKey()
 
 		// get wallet state from the network
-		walletState, code, err := rpc.WalletState(conn.Conn(), sumuslib.Pack58(pubkey[:]))
+		walletState, code, err := rpc.WalletState(conn.Conn(), pubkey.String())
 		if err != nil {
 			return nil, err
 		}
@@ -96,8 +96,8 @@ func New(
 			signer:      ss,
 			public:      pubkey,
 			nonce:       nonce,
-			gold:        amount.NewAmount(walletState.Balance.Gold),
-			mnt:         amount.NewAmount(walletState.Balance.Mnt),
+			gold:        amount.FromAmount(walletState.Balance.Gold),
+			mnt:         amount.FromAmount(walletState.Balance.Mnt),
 			emitter:     emitter,
 			signedCount: 0,
 			failed:      false,
@@ -118,7 +118,7 @@ func New(
 			WithField("db_nonce", dbnonce).
 			WithField("gold", logGold).
 			WithField("mnt", logMnt).
-			Infof("Signer %v prepared", sumuslib.Pack58(pubkey[:]))
+			Infof("Signer %v prepared", pubkey.StringMask())
 	}
 
 	s := &Signer{

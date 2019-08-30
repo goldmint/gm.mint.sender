@@ -22,7 +22,7 @@ type Notifier struct {
 
 // Transporter delivers notifications or fail with an error
 type Transporter interface {
-	NotifyRefilling(addr sumuslib.PublicKey, t sumuslib.Token, a *amount.Amount, tx sumuslib.Digest) bool
+	NotifyRefilling(service string, addr sumuslib.PublicKey, t sumuslib.Token, a *amount.Amount, tx sumuslib.Digest) error
 }
 
 // New Notifier instance

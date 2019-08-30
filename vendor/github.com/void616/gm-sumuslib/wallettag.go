@@ -48,7 +48,7 @@ func ParseWalletTag(s string) (WalletTag, error) {
 			return i, nil
 		}
 	}
-	return 0, fmt.Errorf("Unknown wallet tag name `%v`", s)
+	return 0, fmt.Errorf("unknown wallet tag name `%v`", s)
 }
 
 // ValidWalletTag as uint8

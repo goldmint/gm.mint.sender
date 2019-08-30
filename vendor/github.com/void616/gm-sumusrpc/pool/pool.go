@@ -1,6 +1,7 @@
 package pool
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -15,9 +16,17 @@ type Pool struct {
 	balancer  Balancer
 }
 
+// NodeMeta contains node's metadata for balancer
+type NodeMeta struct {
+	Address          string
+	Available        bool
+	BusyConnections  int32
+	PendingConsumers int32
+}
+
 // Balancer is an interface to switch node from the pool
 type Balancer interface {
-	Get(nodes map[string]*NodePool) (*NodePool, error)
+	Get(nodes []NodeMeta) (NodeMeta, error)
 }
 
 // New Pool instance
@@ -79,14 +88,37 @@ func (p *Pool) Get(timeout time.Duration) (*Conn, error) {
 
 	p.nodesLock.RLock()
 
+	// nodes meta
+	meta := make([]NodeMeta, len(p.nodes))
+	{
+		i := 0
+		for k, v := range p.nodes {
+			meta[i] = NodeMeta{
+				Address:          k,
+				Available:        v.Available(),
+				BusyConnections:  v.ConsumedConnections(),
+				PendingConsumers: v.PendingConsumers(),
+			}
+		}
+	}
+
 	// switch node
-	n, err := p.balancer.Get(p.nodes)
+	m, err := p.balancer.Get(meta)
 	if err != nil {
 		p.nodesLock.RUnlock()
 		return nil, err
 	}
+
+	// find node by selected meta
+	n, ok := p.nodes[m.Address]
+	if !ok {
+		p.nodesLock.RUnlock()
+		return nil, fmt.Errorf("failed to get node " + m.Address)
+	}
+
 	p.nodesLock.RUnlock()
 
+	// get connection from selected node
 	ret, err := n.Get(timeout)
 	if err != nil {
 		return nil, err

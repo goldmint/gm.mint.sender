@@ -11,7 +11,7 @@ import (
 // Verify transaction payload
 func Verify(address sumuslib.PublicKey, payload []byte, signature sumuslib.Signature) error {
 	if len(payload) == 0 {
-		return fmt.Errorf("Invalid payload")
+		return fmt.Errorf("invalid payload")
 	}
 
 	// make payload digest

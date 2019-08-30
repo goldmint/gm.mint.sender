@@ -1,31 +1,37 @@
-## watcher.watch
-A request to add wallet to (or remove from) observation:
-
-| Field | Type | Meaning |
-| --- | --- | --- |
-| 1 wallet | repeated string | Wallet address in Base58 | 
-| 2 add | bool | True to add wallet, otherwise to remove it |
-
+## mintsender.watcher.watch
+A request to add wallet to (or remove from) observation.
+```
+message {
+  string service = 1;             // Service name (to differentiate multiple requestors): 1..64
+  repeated string publicKey = 2;  // Wallet address in Base58
+  bool add = 3;                   // True to add wallet, otherwise to remove it
+}
+```
 ### Reply (ACK)
-| Field | Type | Meaning |
-| --- | --- | --- |
-| 1 success | bool | Success is true in case of success | 
-| 2 error | string | Error contains error descrition in case of failure |
+```
+message {
+  bool success = 1;  // Success is true in case of success
+  string error = 2;  // Error contains error descrition in case of failure
+}
+```
 
---- 
+---
 
-## watcher.received
-An event from watcher:
-
-| Field | Type | Meaning |
-| --- | --- | --- |
-| 1 pubkey | string | Wallet address in Base58 |
-| 2 token | string | GOLD or MNT |
-| 3 amount | string | Token amount in major units: 1.234 (18 decimal places) |
-| 4 transaction | string | Digest of the refilling tx in Base58 |
-
+## mintsender.watcher.refill
+An event from watcher.
+```
+message RefillEvent {
+  string service = 1;      // Service name (to differentiate multiple requestors): 1..64
+  string publicKey = 2;    // Wallet address in Base58
+  string token = 3;        // GOLD or MNT
+  string amount = 4;       // Token amount in major units: 1.234 (18 decimal places)
+  string transaction = 5;  // Digest of the refilling tx in Base58
+}
+```
 ### Reply (ACK)
-| Field | Type | Meaning |
-| --- | --- | --- |
-| 1 success | bool | Success is true in case of success | 
-| 2 error | string | Error contains error descrition in case of failure |
+```
+message {
+  bool success = 1;  // Success is true in case of success
+  string error = 2;  // Error contains error descrition in case of failure
+}
+```

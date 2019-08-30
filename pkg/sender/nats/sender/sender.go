@@ -4,7 +4,7 @@ package sender
 
 const (
 	// SubjectSend request subject
-	SubjectSend = "sender.send"
+	SubjectSend = "mintsender.sender.send"
 	// SubjectSent event subject
-	SubjectSent = "sender.sent"
+	SubjectSent = "mintsender.sender.sent"
 )

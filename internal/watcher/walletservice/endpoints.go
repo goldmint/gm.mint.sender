@@ -8,7 +8,7 @@ import (
 )
 
 // AddWallet adds wallet to the DB and sends it to the transaction filter
-func (s *Service) AddWallet(pub ...sumuslib.PublicKey) bool {
+func (s *Service) AddWallet(service string, pub ...sumuslib.PublicKey) bool {
 	// metrics
 	if s.mtxMethodDuration != nil {
 		defer func(t time.Time, method string) {
@@ -16,20 +16,31 @@ func (s *Service) AddWallet(pub ...sumuslib.PublicKey) bool {
 		}(time.Now(), "add_wallet")
 	}
 
-	if err := s.dao.PutWallet(&types.PutWallet{
-		PublicKeys: pub,
-	}); err != nil {
+	list := make([]*types.Wallet, len(pub))
+	for i, v := range pub {
+		list[i] = &types.Wallet{
+			PublicKey: v,
+			Service:   service,
+		}
+	}
+
+	if err := s.dao.PutWallet(list...); err != nil {
 		s.logger.WithError(err).Error("Failed to add wallets")
 		return false
 	}
 	for _, p := range pub {
-		s.addWallet <- p
+		s.walletSubs <- WalletSub{
+			PublicKey: p,
+			Service:   service,
+			Add:       true,
+		}
+		s.watchWallet <- p
 	}
 	return true
 }
 
 // RemoveWallet removes wallet from the DB and from the transaction filter
-func (s *Service) RemoveWallet(pub ...sumuslib.PublicKey) bool {
+func (s *Service) RemoveWallet(service string, pub ...sumuslib.PublicKey) bool {
 	// metrics
 	if s.mtxMethodDuration != nil {
 		defer func(t time.Time, method string) {
@@ -37,14 +48,24 @@ func (s *Service) RemoveWallet(pub ...sumuslib.PublicKey) bool {
 		}(time.Now(), "remove_wallet")
 	}
 
-	if err := s.dao.DeleteWallet(&types.DeleteWallet{
-		PublicKeys: pub,
-	}); err != nil {
+	list := make([]*types.Wallet, len(pub))
+	for i, v := range pub {
+		list[i] = &types.Wallet{
+			PublicKey: v,
+			Service:   service,
+		}
+	}
+
+	if err := s.dao.DeleteWallet(list...); err != nil {
 		s.logger.WithError(err).Error("Failed to remove wallets")
 		return false
 	}
 	for _, p := range pub {
-		s.removeWallet <- p
+		s.walletSubs <- WalletSub{
+			PublicKey: p,
+			Service:   service,
+			Add:       false,
+		}
 	}
 	return true
 }

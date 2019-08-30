@@ -101,10 +101,10 @@ github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/stretchr/testify v1.3.0 h1:TivCn/peBQ7UY8ooIcPgZFpTNSz0Q2U6UrFlUfqbe0Q=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
-github.com/void616/gm-sumuslib v1.0.3 h1:lA2b1rLWG3sm41/TAa56z/7DGz9FHWjIlixxMBPFM1E=
-github.com/void616/gm-sumuslib v1.0.3/go.mod h1:+08YwpaXBlYIacZUsi+ln1k1QexlV/P5ZkWl1PKy3ug=
-github.com/void616/gm-sumusrpc v1.1.4 h1:0pLPeFfNIq1ZikqHUJzql/SoGV9DwUH9O3bJ/imHLSw=
-github.com/void616/gm-sumusrpc v1.1.4/go.mod h1:38zhuddWVYJvTjoU9zk8SNoYISrdTpLUo5SuGEuQJw8=
+github.com/void616/gm-sumuslib v1.1.0 h1:AG05xEAn2i0M0hGQaOt5LjkKCAKtL14hU6IbT2NWgLY=
+github.com/void616/gm-sumuslib v1.1.0/go.mod h1:+08YwpaXBlYIacZUsi+ln1k1QexlV/P5ZkWl1PKy3ug=
+github.com/void616/gm-sumusrpc v1.1.5 h1:a3y/7WLT50tbtrmVilSMKLzYuoV62uguZmwCIG6fOs4=
+github.com/void616/gm-sumusrpc v1.1.5/go.mod h1:Ta9N++uOcEZDaB+5iwfgAC/1ntvyAQNWA1gmiMiTUXI=
 github.com/void616/gotask v1.0.2 h1:fTeG/vSKjfLu7mJoijid8CgrEe2URDfO6X2doXAn7eE=
 github.com/void616/gotask v1.0.2/go.mod h1:60ZMdNWQlNP/4iQwLOcFADVw0MRkiIqKv3cZOS28qgI=
 golang.org/x/crypto v0.0.0-20180904163835-0709b304e793/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=

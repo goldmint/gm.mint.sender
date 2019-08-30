@@ -92,7 +92,7 @@ func Parse(r io.Reader, cbkHeader CbkHeader, cbkTransaction CbkTransaction) erro
 
 		// check the code
 		if !sumuslib.ValidTransaction(txCode) {
-			return fmt.Errorf("Unknown transaction with code `%v` with index %v", txCode, i)
+			return fmt.Errorf("unknown transaction with code `%v` at index %v", txCode, i)
 		}
 		txType := sumuslib.Transaction(txCode)
 

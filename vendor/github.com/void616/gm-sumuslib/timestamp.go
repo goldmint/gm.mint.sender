@@ -12,8 +12,8 @@ func init() {
 	epochStart = time.Date(1400, 01, 01, 00, 00, 00, 000000, loc)
 }
 
-// DateFromStamp (Sumus timestamp)
-func DateFromStamp(timestamp uint64) time.Time {
+// DateToStamp (Sumus timestamp)
+func DateToStamp(timestamp uint64) time.Time {
 	const spd uint64 = 86400
 	const mcsm uint64 = 1000000
 

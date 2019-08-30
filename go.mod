@@ -18,8 +18,8 @@ require (
 	github.com/nats-io/nuid v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.1.0
 	github.com/sirupsen/logrus v1.4.1
-	github.com/void616/gm-sumuslib v1.0.3
-	github.com/void616/gm-sumusrpc v1.1.4
+	github.com/void616/gm-sumuslib v1.1.0
+	github.com/void616/gm-sumusrpc v1.1.5
 	github.com/void616/gotask v1.0.2
 	golang.org/x/crypto v0.0.0-20190404164418-38d8ce5564a5 // indirect
 	gopkg.in/gormigrate.v1 v1.4.0

@@ -23,7 +23,7 @@ type Service struct {
 
 // SenderService provides ability to enqueue sending
 type SenderService interface {
-	EnqueueSending(id string, to sumuslib.PublicKey, a *amount.Amount, t sumuslib.Token) (dup, success bool)
+	EnqueueSending(id, service string, to sumuslib.PublicKey, a *amount.Amount, t sumuslib.Token) (dup, success bool)
 }
 
 // New Saver instance

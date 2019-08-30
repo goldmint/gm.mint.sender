@@ -3,6 +3,7 @@ package notifier
 import (
 	"time"
 
+	"github.com/void616/gm-mint-sender/internal/sender/db/types"
 	"github.com/void616/gotask"
 )
 
@@ -40,7 +41,15 @@ func (n *Notifier) Task(token *gotask.Token) {
 			t := time.Now()
 
 			// mark as notified
-			if err := n.dao.SetSendingNotified(snd.ID, true); err != nil {
+			{
+				now := time.Now().UTC()
+				if snd.FirstNotifyAt == nil {
+					snd.FirstNotifyAt = &now
+				}
+				snd.NotifyAt = &now
+				snd.Notified = true
+			}
+			if err := n.dao.UpdateSending(snd); err != nil {
 				n.logger.
 					WithError(err).
 					WithField("id", snd.ID).
@@ -50,17 +59,47 @@ func (n *Notifier) Task(token *gotask.Token) {
 				continue
 			}
 
-			// notify
 			notiError := "Transaction failed"
-			if snd.Sent {
+			if snd.Status == types.SendingConfirmed {
 				notiError = ""
 			}
-			if !n.transporter.PublishSentEvent(snd.RequestID, snd.Sent, notiError, snd.Digest) {
 
-				n.logger.WithField("id", snd.ID).Error("Failed to notify")
+			// notify
+			err := n.transporter.PublishSentEvent(
+				snd.Status == types.SendingConfirmed,
+				notiError,
+				snd.Service, snd.RequestID,
+				snd.To, snd.Token, snd.Amount, snd.Digest,
+			)
+			if err != nil {
+				n.logger.WithField("id", snd.ID).WithError(err).Error("Failed to notify")
+
+				// notify next time
+				when := time.Now().UTC()
+				if snd.FirstNotifyAt != nil {
+					mikes := time.Now().UTC().Sub(*snd.FirstNotifyAt).Minutes()
+					switch {
+					// for 5m: every 1m
+					case mikes < 5:
+						when = when.Add(time.Minute)
+					// then for 30m: every 5m
+					case mikes < 35:
+						when = when.Add(time.Minute * 5)
+					// then for 60m: every 10m
+					case mikes < 95:
+						when = when.Add(time.Minute * 10)
+					// then every 120m
+					default:
+						when = when.Add(time.Minute * 120)
+					}
+				} else {
+					when = when.Add(time.Hour * 24 * 365)
+				}
 
 				// mark as unnotified
-				if err := n.dao.SetSendingNotified(snd.ID, false); err != nil {
+				snd.NotifyAt = &when
+				snd.Notified = false
+				if err := n.dao.UpdateSending(snd); err != nil {
 					n.logger.
 						WithError(err).
 						WithField("id", snd.ID).
@@ -69,14 +108,14 @@ func (n *Notifier) Task(token *gotask.Token) {
 					out = true
 					continue
 				}
+			} else {
+				n.logger.WithField("id", snd.ID).Debug("Notified")
 			}
 
 			// metrics
 			if n.mtxTaskDuration != nil {
 				n.mtxTaskDuration.WithLabelValues("notifier_shot").Observe(time.Since(t).Seconds())
 			}
-
-			n.logger.WithField("id", snd.ID).Debug("Notified")
 		}
 
 		// metrics

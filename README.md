@@ -101,7 +101,7 @@ make dockerize # make a Docker image
 Makefile builds services for Linux/AMD64 by default. \
 Use `TARGETS` arg to change this behaviour. For instance:
 ```sh
-make TARGETS="watcher/windows/amd64/ sender/windows/amd64/"
+make TARGETS="watcher/windows/amd64/ sender/windows/amd64/ testcli/windows/amd64"
 ```
 
 
@@ -112,9 +112,6 @@ Setup MySQL database, run Nats, run Mint services and then run `go run cmd/testc
 ![Test Cli](docs/testcli.png)
 
 ### Code test
-Nats transport tests are require running Nats server (localhost:4222 by default). \
-MySQL DAO tests are require running MySQL Server ~5.7. DSN string should be manually edited. \
-\
 Packages unit tests:
 ```sh
 make test

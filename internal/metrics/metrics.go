@@ -45,7 +45,7 @@ func (s *Service) Task(token *gotask.Token) {
 	}()
 
 	for !token.Stopped() {
-		time.Sleep(time.Second)
+		token.Sleep(time.Second)
 	}
 
 	if err := server.Shutdown(nil); err != nil {

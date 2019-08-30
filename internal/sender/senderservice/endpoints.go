@@ -3,12 +3,14 @@ package senderservice
 import (
 	"time"
 
+	"github.com/void616/gm-mint-sender/internal/sender/db/types"
+
 	sumuslib "github.com/void616/gm-sumuslib"
 	"github.com/void616/gm-sumuslib/amount"
 )
 
 // EnqueueSending adds a sending to the sender queue
-func (s *Service) EnqueueSending(id string, to sumuslib.PublicKey, a *amount.Amount, t sumuslib.Token) (dup, success bool) {
+func (s *Service) EnqueueSending(id, service string, to sumuslib.PublicKey, a *amount.Amount, t sumuslib.Token) (dup, success bool) {
 	// metrics
 	if s.mtxMethodDuration != nil {
 		defer func(t time.Time, method string) {
@@ -16,9 +18,16 @@ func (s *Service) EnqueueSending(id string, to sumuslib.PublicKey, a *amount.Amo
 		}(time.Now(), "enqueue_sending")
 	}
 
-	if err := s.dao.EnqueueSending(
-		id, to, a, t,
-	); err != nil {
+	snd := &types.Sending{
+		Status:    types.SendingEnqueued,
+		To:        to,
+		Token:     t,
+		Amount:    amount.FromAmount(a),
+		Service:   service,
+		RequestID: id,
+	}
+
+	if err := s.dao.PutSending(snd); err != nil {
 		if s.dao.DuplicateError(err) {
 			return true, false
 		}

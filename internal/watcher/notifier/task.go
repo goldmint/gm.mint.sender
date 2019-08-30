@@ -3,8 +3,6 @@ package notifier
 import (
 	"time"
 
-	"github.com/void616/gm-mint-sender/internal/watcher/db/types"
-	sumuslib "github.com/void616/gm-sumuslib"
 	"github.com/void616/gotask"
 )
 
@@ -14,7 +12,7 @@ func (n *Notifier) Task(token *gotask.Token) {
 	for !token.Stopped() {
 
 		// get list
-		list, err := n.dao.ListUnsentIncomings(itemsPerShot)
+		list, err := n.dao.ListUnnotifiedIncomings(itemsPerShot)
 		if err != nil {
 			n.logger.WithError(err).Error("Failed to get unsent items")
 			token.Sleep(time.Second * 30)
@@ -41,15 +39,20 @@ func (n *Notifier) Task(token *gotask.Token) {
 			// metrics
 			t := time.Now()
 
-			// mark as sent
-			if err := n.dao.MarkIncomingSent(&types.MarkIncomingSent{
-				Digest: inc.Digest,
-				Sent:   true,
-			}); err != nil {
+			// mark as notified
+			{
+				now := time.Now().UTC()
+				if inc.FirstNotifyAt == nil {
+					inc.FirstNotifyAt = &now
+				}
+				inc.NotifyAt = &now
+				inc.Notified = true
+			}
+			if err := n.dao.UpdateIncoming(inc); err != nil {
 				n.logger.
 					WithError(err).
-					WithField("wallet", sumuslib.Pack58(inc.To[:])).
-					WithField("tx", sumuslib.Pack58(inc.Digest[:])).
+					WithField("wallet", inc.To.String()).
+					WithField("tx", inc.Digest.String()).
 					Error("Failed to update incoming")
 				token.Sleep(time.Second * 30)
 				out = true
@@ -57,38 +60,60 @@ func (n *Notifier) Task(token *gotask.Token) {
 			}
 
 			// notify
-			if !n.transporter.NotifyRefilling(inc.To, inc.Token, inc.Amount, inc.Digest) {
-
+			err := n.transporter.NotifyRefilling(inc.Service, inc.To, inc.Token, inc.Amount, inc.Digest)
+			if err != nil {
 				n.logger.
-					WithField("wallet", sumuslib.Pack58(inc.To[:])).
-					WithField("tx", sumuslib.Pack58(inc.Digest[:])).
+					WithField("wallet", inc.To.String()).
+					WithField("tx", inc.Digest.String()).
+					WithError(err).
 					Error("Failed to notify")
 
-				// mark as unsent
-				if err := n.dao.MarkIncomingSent(&types.MarkIncomingSent{
-					Digest: inc.Digest,
-					Sent:   false,
-				}); err != nil {
+				// notify next time
+				when := time.Now().UTC()
+				if inc.FirstNotifyAt != nil {
+					mikes := time.Now().UTC().Sub(*inc.FirstNotifyAt).Minutes()
+					switch {
+					// for 5m: every 1m
+					case mikes < 5:
+						when = when.Add(time.Minute)
+					// then for 30m: every 5m
+					case mikes < 35:
+						when = when.Add(time.Minute * 5)
+					// then for 60m: every 10m
+					case mikes < 95:
+						when = when.Add(time.Minute * 10)
+					// then every 120m
+					default:
+						when = when.Add(time.Minute * 120)
+					}
+				} else {
+					when = when.Add(time.Hour * 24 * 365)
+				}
+
+				// mark as unnotified
+				inc.NotifyAt = &when
+				inc.Notified = false
+				if err := n.dao.UpdateIncoming(inc); err != nil {
 					n.logger.
 						WithError(err).
-						WithField("wallet", sumuslib.Pack58(inc.To[:])).
-						WithField("tx", sumuslib.Pack58(inc.Digest[:])).
+						WithField("wallet", inc.To.String()).
+						WithField("tx", inc.Digest.String()).
 						Error("Failed to update incoming")
 					token.Sleep(time.Second * 30)
 					out = true
 					continue
 				}
+			} else {
+				n.logger.
+					WithField("wallet", inc.To.String()).
+					WithField("tx", inc.Digest.String()).
+					Info("Notified")
 			}
 
 			// metrics
 			if n.mtxTaskDuration != nil {
 				n.mtxTaskDuration.WithLabelValues("notifier_shot").Observe(time.Since(t).Seconds())
 			}
-
-			n.logger.
-				WithField("wallet", sumuslib.Pack58(inc.To[:])).
-				WithField("tx", sumuslib.Pack58(inc.Digest[:])).
-				Info("Notified")
 		}
 
 		// metrics

@@ -1,11 +1,16 @@
 package signer
 
 import (
-	"fmt"
-
 	sumuslib "github.com/void616/gm-sumuslib"
 	"github.com/void616/gm-sumuslib/signer/ed25519"
 )
+
+// Signer data
+type Signer struct {
+	initialized bool
+	privateKey  []byte
+	publicKey   []byte
+}
 
 // New made from random keypair
 func New() (*Signer, error) {
@@ -26,21 +31,17 @@ func New() (*Signer, error) {
 	}, nil
 }
 
-// FromPK makes keypair from prehashed private key
-func FromPK(b []byte) (*Signer, error) {
+// FromBytes makes keypair from prehashed private key
+func FromBytes(b []byte) (*Signer, error) {
 
-	// check pk size
-	if len(b) != 64 {
-		return nil, fmt.Errorf("Private key has invalid size %v, expected %v", len(b), 64)
+	pvt, err := sumuslib.BytesToPrivateKey(b)
+	if err != nil {
+		return nil, err
 	}
 
-	// copy pk bytes
-	pvt := make([]byte, 64)
-	copy(pvt, b)
-
 	ret := &Signer{
-		privateKey:  pvt,
-		publicKey:   ed25519.PublicKeyFromPrehashedPK(pvt),
+		privateKey:  pvt[:],
+		publicKey:   ed25519.PublicKeyFromPrehashedPK(pvt[:]),
 		initialized: true,
 	}
 
@@ -49,16 +50,9 @@ func FromPK(b []byte) (*Signer, error) {
 
 // ---
 
-// Signer data
-type Signer struct {
-	initialized bool
-	privateKey  []byte
-	publicKey   []byte
-}
-
 func (s *Signer) assert() {
 	if !s.initialized {
-		panic("Signer is not initialized")
+		panic("signer is not initialized")
 	}
 }
 

@@ -22,8 +22,8 @@ type Service struct {
 
 // WalletService provides wallets management methods
 type WalletService interface {
-	AddWallet(...sumuslib.PublicKey) bool
-	RemoveWallet(...sumuslib.PublicKey) bool
+	AddWallet(string, ...sumuslib.PublicKey) bool
+	RemoveWallet(string, ...sumuslib.PublicKey) bool
 }
 
 // New Saver instance
@@ -36,6 +36,7 @@ func New(
 	mtxQueueGauge *prometheus.GaugeVec,
 	logger *logrus.Entry,
 ) (*Service, func(), error) {
+
 	natsConnection, err := gonats.Connect(
 		url,
 		gonats.Name("mint_watcher"),

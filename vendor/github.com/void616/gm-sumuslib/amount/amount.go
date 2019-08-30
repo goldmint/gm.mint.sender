@@ -2,7 +2,6 @@ package amount
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/big"
 	"strings"
@@ -13,26 +12,31 @@ const Precision = 18
 
 func init() {
 	if Precision < 6 {
-		panic("Precision < 6")
+		panic("precision < 6")
 	}
 }
 
-// New amount
+// Amount is amount of token in Sumus
+type Amount struct {
+	Value *big.Int
+}
+
+// New amount instance
 func New() *Amount {
 	return &Amount{
 		Value: big.NewInt(0),
 	}
 }
 
-// NewAmount copy
-func NewAmount(a *Amount) *Amount {
+// FromAmount creates an instance and copies a value from another instance
+func FromAmount(a *Amount) *Amount {
 	return &Amount{
 		Value: big.NewInt(0).Set(a.Value),
 	}
 }
 
-// NewInteger amount: 100 => 100.000000000000000000
-func NewInteger(i int64) *Amount {
+// FromInteger creates an instance, setting integral part of it's value from integer (100 => 100.000000000000000000)
+func FromInteger(i int64) *Amount {
 	v := big.NewInt(0).
 		Mul(
 			big.NewInt(i),
@@ -43,49 +47,58 @@ func NewInteger(i int64) *Amount {
 	}
 }
 
-// NewBig amount: 100 => 0.000000000000000100
-func NewBig(i *big.Int) *Amount {
+// FromBig creates an instance, setting it's value from big integer (100 => 0.000000000000000100)
+func FromBig(b *big.Int) *Amount {
 	return &Amount{
-		Value: big.NewInt(0).Set(i),
+		Value: big.NewInt(0).Set(b),
 	}
 }
 
-// NewFloatString amount:
-// "1.000000000000000000123" => 1.000000000000000000
-// "1.000000000000000000999" => 1.000000000000000001
-func NewFloatString(s string) *Amount {
+// FromString creates an instance from a string containing float-point representation of the value.
+// Example: "1.000000000000000000123" => 1.000000000000000000
+// Example: "1.000000000000000000999" => 1.000000000000000001
+func FromString(s string) (*Amount, error) {
 	f, ok := big.NewRat(1, 1).SetString(s)
 	if !ok {
-		return nil
+		return nil, fmt.Errorf("failed to parse amount")
 	}
-	t := strings.Replace(
-		f.FloatString(Precision),
-		".", "", -1,
-	)
-	return NewBigString(t, 10)
+	t := strings.Replace(f.FloatString(Precision), ".", "", -1)
+	return FromBigString(t, 10)
 }
 
-// NewBigString amount:
-// "0100" (base 10) => 0.000000000000000100, "100" (base 00) => 0.000000000000000100
-// "000A" (base 16) => 0.000000000000000010, "0xA" (base 00) => 0.000000000000000010
-// "0144" (base 08) => 0.000000000000000100, "012" (base 00) => 0.000000000000000010
-// etc. (see big.SetString())
-func NewBigString(s string, base int) *Amount {
+// MustFromString does the same as FromString, but panics on error
+func MustFromString(s string) *Amount {
+	a, err := FromString(s)
+	if err != nil {
+		panic(err)
+	}
+	return a
+}
+
+// FromBigString creates an instance from a string containing big integer representation of the value.
+// Example: "0100" (base 10) => 0.000000000000000100, "100" (base 00) => 0.000000000000000100
+// Example: "000A" (base 16) => 0.000000000000000010, "0xA" (base 00) => 0.000000000000000010
+// Example: "0144" (base 08) => 0.000000000000000100, "012" (base 00) => 0.000000000000000010
+func FromBigString(s string, base int) (*Amount, error) {
 	v, ok := big.NewInt(0).SetString(s, base)
 	if !ok {
-		return nil
+		return nil, fmt.Errorf("failed to parse amount")
 	}
 	return &Amount{
 		Value: v,
+	}, nil
+}
+
+// MustFromBigString does the same as FromBigString, but panics on error
+func MustFromBigString(s string, base int) *Amount {
+	a, err := FromBigString(s, base)
+	if err != nil {
+		panic(err)
 	}
+	return a
 }
 
 // ---
-
-// Amount in Sumus
-type Amount struct {
-	Value *big.Int
-}
 
 // String representation: -100.000000000000000123
 func (a *Amount) String() string {
@@ -148,9 +161,9 @@ func (a *Amount) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, &s); err != nil {
 		return err
 	}
-	tmp := NewFloatString(s)
-	if tmp == nil {
-		return errors.New("failed to parse amount from `" + s + "`")
+	tmp, err := FromString(s)
+	if err != nil {
+		return fmt.Errorf("failed to parse amount from `%v`: %v", s, err)
 	}
 	*a = *tmp
 	return nil

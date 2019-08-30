@@ -48,7 +48,7 @@ func TestNew(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for i := 0; i < 100; i++ {
-				req, _ := proto.Marshal(&walletsvc.AddRemoveRequest{Add: i%2 == 0, Pubkey: []string{sumuslib.Pack58(wallet1), sumuslib.Pack58(wallet2)}})
+				req, _ := proto.Marshal(&walletsvc.AddRemoveRequest{Add: i%2 == 0, PublicKey: []string{sumuslib.Pack58(wallet1), sumuslib.Pack58(wallet2)}})
 				msg, err := nc.Request(svc.subjPrefix+walletsvc.SubjectWatch, req, time.Second*5)
 				if err != nil || msg == nil {
 					t.Fatal(err)
@@ -66,7 +66,7 @@ func TestNew(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for i := 0; i < 100; i++ {
-				req, _ := proto.Marshal(&walletsvc.AddRemoveRequest{Add: i%2 == 0, Pubkey: []string{sumuslib.Pack58(wallet1)}})
+				req, _ := proto.Marshal(&walletsvc.AddRemoveRequest{Add: i%2 == 0, PublicKey: []string{sumuslib.Pack58(wallet1)}})
 				msg, err := nc.Request(svc.subjPrefix+walletsvc.SubjectWatch, req, time.Second*5)
 				if err != nil || msg == nil {
 					t.Fatal(err)
@@ -84,7 +84,7 @@ func TestNew(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for i := 0; i < 100; i++ {
-				req, _ := proto.Marshal(&walletsvc.AddRemoveRequest{Add: i%2 == 0, Pubkey: []string{sumuslib.Pack58(walletInvalid)}})
+				req, _ := proto.Marshal(&walletsvc.AddRemoveRequest{Add: i%2 == 0, PublicKey: []string{sumuslib.Pack58(walletInvalid)}})
 				msg, err := nc.Request(svc.subjPrefix+walletsvc.SubjectWatch, req, time.Second*5)
 				if err != nil || msg == nil {
 					t.Fatal(err)
@@ -107,7 +107,7 @@ func TestNew(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for i := 0; i < 100; i++ {
-				req, _ := proto.Marshal(&walletsvc.AddRemoveRequest{Add: i%2 == 0, Pubkey: []string{sumuslib.Pack58(wallet1)}})
+				req, _ := proto.Marshal(&walletsvc.AddRemoveRequest{Add: i%2 == 0, PublicKey: []string{sumuslib.Pack58(wallet1)}})
 				msg, err := nc.Request(svc.subjPrefix+walletsvc.SubjectWatch, req, time.Second*5)
 				if err != nil || msg == nil {
 					t.Fatal(err)
@@ -145,7 +145,7 @@ type mockWalletService struct {
 	Rems  uint32
 }
 
-func (s *mockWalletService) AddWallet(pubs ...sumuslib.PublicKey) bool {
+func (s *mockWalletService) AddWallet(_ string, pubs ...sumuslib.PublicKey) bool {
 	if !s.Works {
 		return false
 	}
@@ -153,7 +153,7 @@ func (s *mockWalletService) AddWallet(pubs ...sumuslib.PublicKey) bool {
 	return true
 }
 
-func (s *mockWalletService) RemoveWallet(pubs ...sumuslib.PublicKey) bool {
+func (s *mockWalletService) RemoveWallet(_ string, pubs ...sumuslib.PublicKey) bool {
 	if !s.Works {
 		return false
 	}

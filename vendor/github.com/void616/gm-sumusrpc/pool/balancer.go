@@ -10,22 +10,20 @@ type DefaultBalancer struct {
 }
 
 // Get picks a node from the pool of nodes
-func (b *DefaultBalancer) Get(nodes map[string]*NodePool) (*NodePool, error) {
-	at := ""
-	weight := int64((^uint64(0)) >> 1)
+func (b *DefaultBalancer) Get(nodes []NodeMeta) (NodeMeta, error) {
+	var at = -1
+	var weight = ^uint32(0)
 	for i, p := range nodes {
-		if p.Available() {
-			w := int64(p.ConsumedConnections()) + int64(p.PendingConsumers())
+		if p.Available {
+			w := uint32(p.BusyConnections) + uint32(p.PendingConsumers)
 			if weight > w {
 				weight = w
 				at = i
 			}
 		}
 	}
-
-	if at == "" {
-		return nil, fmt.Errorf("failed to find a free node")
+	if at < 0 {
+		return NodeMeta{}, fmt.Errorf("failed to find a free node")
 	}
-
 	return nodes[at], nil
 }

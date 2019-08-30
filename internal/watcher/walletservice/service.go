@@ -7,28 +7,35 @@ import (
 	sumuslib "github.com/void616/gm-sumuslib"
 )
 
+// WalletSub contains data to add/remove a pair wallet:service to transaction saver
+type WalletSub struct {
+	PublicKey sumuslib.PublicKey
+	Service   string
+	Add       bool
+}
+
 // Service is a wallet service that provides methods to add/remove wallets etc.
 type Service struct {
-	logger       *logrus.Entry
-	addWallet    chan<- sumuslib.PublicKey
-	removeWallet chan<- sumuslib.PublicKey
-	dao          db.DAO
+	logger      *logrus.Entry
+	watchWallet chan<- sumuslib.PublicKey
+	walletSubs  chan<- WalletSub
+	dao         db.DAO
 
 	mtxMethodDuration *prometheus.SummaryVec
 }
 
 // New Service instance
 func New(
-	addWallet chan<- sumuslib.PublicKey,
-	removeWallet chan<- sumuslib.PublicKey,
+	watchWallet chan<- sumuslib.PublicKey,
+	walletSubs chan<- WalletSub,
 	dao db.DAO,
 	mtxMethodDuration *prometheus.SummaryVec,
 	logger *logrus.Entry,
 ) (*Service, error) {
 	f := &Service{
 		logger:            logger,
-		addWallet:         addWallet,
-		removeWallet:      removeWallet,
+		watchWallet:       watchWallet,
+		walletSubs:        walletSubs,
 		dao:               dao,
 		mtxMethodDuration: mtxMethodDuration,
 	}

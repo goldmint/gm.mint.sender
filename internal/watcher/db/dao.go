@@ -9,10 +9,12 @@ type DAO interface {
 	Available() bool
 	DuplicateError(err error) bool
 	MaxPacketError(err error) bool
-	PutWallet(*types.PutWallet) error
-	ListWallets() ([]*types.ListWalletsItem, error)
-	DeleteWallet(*types.DeleteWallet) error
-	PutIncoming(*types.PutIncoming) error
-	MarkIncomingSent(*types.MarkIncomingSent) error
-	ListUnsentIncomings(max uint16) ([]*types.ListUnsentIncomingsItem, error)
+
+	PutWallet(v ...*types.Wallet) error
+	ListWallets() ([]*types.WalletServices, error)
+	DeleteWallet(v ...*types.Wallet) error
+
+	PutIncoming(v ...*types.Incoming) error
+	ListUnnotifiedIncomings(max uint16) ([]*types.Incoming, error)
+	UpdateIncoming(v *types.Incoming) error
 }

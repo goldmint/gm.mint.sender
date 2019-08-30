@@ -45,7 +45,7 @@ github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 # github.com/sirupsen/logrus v1.4.1
 github.com/sirupsen/logrus
-# github.com/void616/gm-sumuslib v1.0.3
+# github.com/void616/gm-sumuslib v1.1.0
 github.com/void616/gm-sumuslib
 github.com/void616/gm-sumuslib/signer
 github.com/void616/gm-sumuslib/amount
@@ -55,7 +55,7 @@ github.com/void616/gm-sumuslib/transaction
 github.com/void616/gm-sumuslib/fee
 github.com/void616/gm-sumuslib/signer/ed25519
 github.com/void616/gm-sumuslib/signer/ed25519/internal/edwards25519
-# github.com/void616/gm-sumusrpc v1.1.4
+# github.com/void616/gm-sumusrpc v1.1.5
 github.com/void616/gm-sumusrpc/rpc
 github.com/void616/gm-sumusrpc/pool
 github.com/void616/gm-sumusrpc/conn

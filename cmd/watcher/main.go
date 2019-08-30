@@ -253,9 +253,13 @@ func main() {
 	defer close(filteredTX)
 
 	// a pair of chans to add/remove wallets to/from filter
-	walletToAdd, walletToRemove := make(chan sumuslib.PublicKey, 32), make(chan sumuslib.PublicKey, 32)
-	defer close(walletToAdd)
-	defer close(walletToRemove)
+	walletToTrack, walletToUntrack := make(chan sumuslib.PublicKey, 256), make(chan sumuslib.PublicKey, 256)
+	defer close(walletToTrack)
+	defer close(walletToUntrack)
+
+	// chan to add/remove a wallet:service pair to/from txsaver
+	walletSubs := make(chan walletservice.WalletSub, 512)
+	defer close(walletSubs)
 
 	// fresh block observer
 	var blockObserver *blockobserver.Observer
@@ -311,8 +315,8 @@ func main() {
 		f, err := txfilter.New(
 			parsedTX,
 			filteredTX,
-			walletToAdd,
-			walletToRemove,
+			walletToTrack,
+			walletToUntrack,
 			filter,
 			mtxROIWalletsGauge, mtxTxVolumeCounter, mtxTaskDuration, mtxQueueGauge,
 			logger.WithField("task", "tx_filter"),
@@ -322,15 +326,6 @@ func main() {
 		}
 		txFilter = f
 		txFilterTask, _ = gotask.NewTask("tx_filter", txFilter.Task)
-
-		// add wallets to the filter
-		if wallets, err := dao.ListWallets(); err != nil {
-			logger.WithError(err).Fatal("Failed to get wallets list from DB")
-		} else {
-			for _, w := range wallets {
-				f.AddWallet(w.PublicKey)
-			}
-		}
 	}
 
 	// tx saver
@@ -338,6 +333,8 @@ func main() {
 	{
 		s, err := txsaver.New(
 			filteredTX,
+			walletSubs,
+			walletToUntrack,
 			dao,
 			mtxTaskDuration,
 			logger.WithField("task", "tx_saver"),
@@ -354,8 +351,8 @@ func main() {
 	var walletService *walletservice.Service
 	{
 		s, err := walletservice.New(
-			walletToAdd,
-			walletToRemove,
+			walletToTrack,
+			walletSubs,
 			dao,
 			mtxWalletServiceRequestDuration,
 			logger.WithField("task", "wallet_service"),
@@ -364,6 +361,18 @@ func main() {
 			logger.WithError(err).Fatal("Failed to setup wallet service")
 		}
 		walletService = s
+	}
+
+	// load all the tracking wallets and subscribed services
+	{
+		wallets, err := dao.ListWallets()
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to get wallets list from DB")
+		}
+		for _, w := range wallets {
+			txFilter.AddWallet(w.PublicKey)
+			txSaver.AddWalletSubs(w.PublicKey, w.Services...)
+		}
 	}
 
 	// nats transport

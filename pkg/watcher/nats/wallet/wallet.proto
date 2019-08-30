@@ -3,26 +3,28 @@ package wallet;
 
 // AddRemoveRequest is a request to the service to add or remove a wallet by it's public key
 message AddRemoveRequest {
-	repeated string pubkey = 1;	// Wallet address in Base58
-	bool add = 2; 				// True to add wallet, otherwise to remove it
+	string service = 1;             // Service name (to differentiate multiple requestors): 1..64
+	repeated string publicKey = 2;  // Wallet address in Base58
+	bool add = 3;                   // True to add wallet, otherwise to remove it
 }
 
 // AddRemoveReply is a reply for AddRemoveRequest
 message AddRemoveReply {
-	bool success = 1; // Success is true in case of success
-	string error = 2; // Error contains error descrition in case of failure
+	bool success = 1;  // Success is true in case of success
+	string error = 2;  // Error contains error descrition in case of failure
 }
 
-// RefilledEvent is an event from the service notifying about a wallet refilling transaction
-message RefilledEvent {
-	string pubkey = 1;		// Wallet address in Base58
-	string token = 2;		// GOLD or MNT
-	string amount = 3;		// Token amount in major units: 1.234 (18 decimal places)
-	string transaction = 4;	// Digest of the refilling tx in Base58
+// RefillEvent is an event from the service notifying about a wallet refilling transaction
+message RefillEvent {
+	string service = 1;      // Service name (to differentiate multiple requestors): 1..64
+	string publicKey = 2;    // Wallet address in Base58
+	string token = 3;        // GOLD or MNT
+	string amount = 4;       // Token amount in major units: 1.234 (18 decimal places)
+	string transaction = 5;  // Digest of the refilling tx in Base58
 }
 
-// RefilledEventReply is a reply for RefilledEvent
-message RefilledEventReply {
-	bool success = 1; // Success is true in case of success
-	string error = 2; // Error contains error descrition in case of failure
+// RefillEventReply is a reply for RefilledEvent
+message RefillEventReply {
+	bool success = 1;  // Success is true in case of success
+	string error = 2;  // Error contains error descrition in case of failure
 }

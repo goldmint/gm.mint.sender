@@ -27,10 +27,8 @@ func (c *Confirmer) Task(token *gotask.Token) {
 						// metrics
 						t := time.Now()
 
-						if err := c.dao.SetSendingConfirmed(
-							tx.From, tx.Digest, tx.Block,
-						); err != nil {
-							c.logger.WithError(err).WithField("digest", sumuslib.Pack58(tx.Digest[:])).Errorf("Failed to confirm transaction")
+						if err := c.dao.SetSendingConfirmed(tx.Digest, tx.From, tx.Block); err != nil {
+							c.logger.WithError(err).WithField("digest", tx.Digest.String()).Errorf("Failed to confirm transaction")
 							token.Sleep(time.Second * 10)
 						} else {
 							saved = true

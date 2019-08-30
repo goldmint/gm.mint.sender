@@ -10,6 +10,10 @@ import (
 	"github.com/void616/gm-sumusrpc/conn"
 )
 
+const (
+	availabilityResetTimeout = time.Second * 60
+)
+
 // NodePool is a connections pool of any single node
 type NodePool struct {
 	endpoint           string
@@ -121,6 +125,7 @@ func (p *NodePool) routine() {
 	defer p.routineWG.Done()
 
 	freeConns := list.New()
+	unavailableSince := time.Now()
 	leave := false
 
 	onConnReleased := func(conn *Conn) {
@@ -195,6 +200,7 @@ func (p *NodePool) routine() {
 					atomic.StoreInt32(p.availableFlag, 1)
 				} else {
 					atomic.StoreInt32(p.availableFlag, 0)
+					unavailableSince = time.Now()
 				}
 			}
 		}
@@ -209,6 +215,11 @@ func (p *NodePool) routine() {
 					freeConns.Remove(x).(*Conn).holder.Close()
 				}
 			}
+		}
+
+		// become available again after timeout
+		if !p.Available() && time.Since(unavailableSince) > availabilityResetTimeout {
+			atomic.StoreInt32(p.availableFlag, 1)
 		}
 	}
 

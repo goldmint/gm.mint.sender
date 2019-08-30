@@ -37,7 +37,7 @@ func (p *Parser) parseBlockData(r io.Reader) error {
 				FeeMNT:            amount.New(),
 				FeeGOLD:           amount.New(),
 				TotalUserData:     0,
-				Timestamp:         sumuslib.DateFromStamp(h.Timestamp),
+				Timestamp:         sumuslib.DateToStamp(h.Timestamp),
 			}
 			return nil
 		},
@@ -72,11 +72,11 @@ func (p *Parser) parseBlockData(r io.Reader) error {
 						m.To = &to
 						switch tx.Token {
 						case sumuslib.TokenMNT:
-							m.AmountMNT = amount.NewAmount(tx.Amount)
+							m.AmountMNT = amount.FromAmount(tx.Amount)
 							// stat
 							blockModel.TotalMNT.Value.Add(blockModel.TotalMNT.Value, tx.Amount.Value)
 						case sumuslib.TokenGOLD:
-							m.AmountGOLD = amount.NewAmount(tx.Amount)
+							m.AmountGOLD = amount.FromAmount(tx.Amount)
 							// stat
 							blockModel.TotalGOLD.Value.Add(blockModel.TotalGOLD.Value, tx.Amount.Value)
 						}
@@ -123,8 +123,8 @@ func (p *Parser) parseBlockData(r io.Reader) error {
 					func(m *Transaction) {
 						to := tx.OwnerAddress
 						m.To = &to
-						m.AmountMNT = amount.NewAmount(tx.AmountMNT)
-						m.AmountGOLD = amount.NewAmount(tx.AmountGOLD)
+						m.AmountMNT = amount.FromAmount(tx.AmountMNT)
+						m.AmountGOLD = amount.FromAmount(tx.AmountGOLD)
 						// stat
 						blockModel.FeeMNT.Value.Add(blockModel.FeeMNT.Value, tx.AmountMNT.Value)
 						blockModel.FeeGOLD.Value.Add(blockModel.FeeGOLD.Value, tx.AmountGOLD.Value)
@@ -153,7 +153,7 @@ func mkTX(itx transaction.ITransaction, typ sumuslib.Transaction, d *serializer.
 		To:         nil,
 		AmountMNT:  amount.New(),
 		AmountGOLD: amount.New(),
-		Timestamp:  sumuslib.DateFromStamp(h.Timestamp),
+		Timestamp:  sumuslib.DateToStamp(h.Timestamp),
 		Data:       nil,
 	}
 	fillCbk(&m)

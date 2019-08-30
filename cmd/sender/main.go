@@ -13,6 +13,8 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/void616/gm-mint-sender/internal/sender/db/types"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
@@ -135,7 +137,7 @@ func main() {
 			if err != nil {
 				logger.WithError(err).Fatalf("Invalid sender private key at index %v", i)
 			}
-			sig, err := signer.FromPK(b)
+			sig, err := signer.FromBytes(b)
 			if err != nil {
 				logger.WithError(err).Fatalf("Invalid sender private key at index %v", i)
 			}
@@ -185,7 +187,9 @@ func main() {
 	// add signers public keys to db to track em after restart
 	{
 		for _, s := range senderSigners {
-			if err := dao.SaveSenderWallet(s.PublicKey()); err != nil {
+			if err := dao.PutWallet(&types.Wallet{
+				PublicKey: s.PublicKey(),
+			}); err != nil {
 				logger.WithError(err).Fatal("Failed to save signer's address to DB")
 			}
 		}
@@ -289,12 +293,12 @@ func main() {
 	// get the earliest unchecked block ID
 	var rangerParseFrom *big.Int
 	{
-		eb, err := dao.EarliestBlock()
+		block, empty, err := dao.EarliestBlock()
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to get earliest block ID")
 		}
-		if !eb.Empty {
-			rangerParseFrom = eb.Block
+		if !empty {
+			rangerParseFrom = block
 			if rangerParseFrom.Cmp(new(big.Int)) < 0 {
 				logger.Fatalf("Invalid earliest block")
 			}
@@ -378,12 +382,12 @@ func main() {
 
 		// expose interest on all known signers wallets
 		{
-			wallets, err := dao.ListSenderWallets()
+			wallets, err := dao.ListWallets()
 			if err != nil {
 				logger.WithError(err).Fatal("Failed to get all known signers' addresses from DB")
 			}
-			for _, pubkey := range wallets {
-				f.AddWallet(pubkey)
+			for _, w := range wallets {
+				f.AddWallet(w.PublicKey)
 			}
 		}
 	}

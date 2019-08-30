@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 
@@ -140,14 +139,14 @@ func parse(r io.Reader, read payloadReader) (*ParsedTransaction, error) {
 	{
 		if txsigned != 0 {
 			// signature
-			b := des.GetBytes(64)
+			b := des.GetBytes(sumuslib.SignatureSize)
 			if err := des.Error(); err != nil {
 				return nil, err
 			}
 			copy(txsignature[:], b)
 		} else {
 			// digest
-			_ = des.GetBytes(32)
+			_ = des.GetBytes(sumuslib.DigestSize)
 			if err := des.Error(); err != nil {
 				return nil, err
 			}
@@ -249,7 +248,7 @@ func (t *TransferAsset) Parse(r io.Reader) (*ParsedTransaction, error) {
 
 		// ensure token is valid
 		if !sumuslib.ValidToken(tokenCode) {
-			return ret, fmt.Errorf("Unknown token with code `%v`", tokenCode)
+			return ret, fmt.Errorf("unknown token with code `%v`", tokenCode)
 		}
 		t.Token = sumuslib.Token(tokenCode)
 
@@ -268,7 +267,7 @@ type UserData struct {
 func (t *UserData) Construct(signer *signer.Signer, nonce uint64) (*SignedTransaction, error) {
 
 	if t.Data == nil {
-		return nil, errors.New("Data is empty")
+		return nil, fmt.Errorf("data is empty")
 	}
 
 	return construct(signer, nonce, func(ser *serializer.Serializer) {
@@ -316,7 +315,7 @@ func (t *RegisterSysWallet) Parse(r io.Reader) (*ParsedTransaction, error) {
 
 		// ensure tag is valid
 		if !sumuslib.ValidWalletTag(tagCode) {
-			return ret, fmt.Errorf("Unknown wallet tag with code `%v`", tagCode)
+			return ret, fmt.Errorf("unknown wallet tag with code `%v`", tagCode)
 		}
 		t.Tag = sumuslib.WalletTag(tagCode)
 
@@ -351,7 +350,7 @@ func (t *UnregisterSysWallet) Parse(r io.Reader) (*ParsedTransaction, error) {
 
 		// ensure tag is valid
 		if !sumuslib.ValidWalletTag(tagCode) {
-			return ret, fmt.Errorf("Unknown wallet tag with code `%v`", tagCode)
+			return ret, fmt.Errorf("unknown wallet tag with code `%v`", tagCode)
 		}
 		t.Tag = sumuslib.WalletTag(tagCode)
 

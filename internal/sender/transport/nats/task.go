@@ -1,6 +1,7 @@
 package nats
 
 import (
+	"regexp"
 	"time"
 	"unicode/utf8"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/void616/gm-sumuslib/amount"
 	"github.com/void616/gotask"
 )
+
+var serviceNameRex = regexp.MustCompile("^[a-zA-Z0-9-_]+$")
 
 // Task loop
 func (s *Service) Task(token *gotask.Token) {
@@ -53,6 +56,12 @@ func (s *Service) Task(token *gotask.Token) {
 			}
 		}()
 
+		// check req service
+		if x := utf8.RuneCountInString(req.GetService()); x < 1 || x > 64 || !serviceNameRex.MatchString(req.GetService()) {
+			replyError = "Invalid service name"
+			return
+		}
+
 		// check req id
 		if x := utf8.RuneCountInString(req.GetId()); x < 1 || x > 64 {
 			replyError = "Invalid request ID"
@@ -60,7 +69,7 @@ func (s *Service) Task(token *gotask.Token) {
 		}
 
 		// parse wallet address
-		reqAddr, err := sumuslib.UnpackAddress58(req.GetPubkey())
+		reqAddr, err := sumuslib.ParsePublicKey(req.GetPublicKey())
 		if err != nil {
 			replyError = "Invalid public key"
 			return
@@ -74,14 +83,14 @@ func (s *Service) Task(token *gotask.Token) {
 		}
 
 		// parse amount
-		reqAmount := amount.NewFloatString(req.GetAmount())
-		if reqAmount == nil {
+		reqAmount, err := amount.FromString(req.GetAmount())
+		if err != nil {
 			replyError = "Invalid amount"
 			return
 		}
 
 		// enqueue
-		if dups, ok := s.senderService.EnqueueSending(req.GetId(), reqAddr, reqAmount, reqToken); !ok {
+		if dups, ok := s.senderService.EnqueueSending(req.GetId(), req.GetService(), reqAddr, reqAmount, reqToken); !ok {
 			if dups {
 				replyError = "Request with the same ID registered"
 			} else {
