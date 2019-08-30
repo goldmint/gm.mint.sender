@@ -13,8 +13,6 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/void616/gm-mint-sender/internal/sender/db/types"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
@@ -25,6 +23,7 @@ import (
 	"github.com/void616/gm-mint-sender/internal/rpcpool"
 	"github.com/void616/gm-mint-sender/internal/sender/db"
 	"github.com/void616/gm-mint-sender/internal/sender/db/mysql"
+	"github.com/void616/gm-mint-sender/internal/sender/db/types"
 	"github.com/void616/gm-mint-sender/internal/sender/notifier"
 	"github.com/void616/gm-mint-sender/internal/sender/senderservice"
 	serviceNats "github.com/void616/gm-mint-sender/internal/sender/transport/nats"
@@ -311,18 +310,22 @@ func main() {
 		}
 	}
 
-	// parser transactions chan
+	// carries parsed transactions
 	parsedTX := make(chan *blockparser.Transaction, 256)
 	defer close(parsedTX)
 
-	// filtered transactions chan
+	// carries filtered transactions
 	filteredTX := make(chan *blockparser.Transaction, 256)
 	defer close(filteredTX)
 
-	// a pair of chans to add/remove wallets to/from filter
+	// carries public keys of wallets to add/remove from transactions filter
 	walletToTrack, walletToUntrack := make(chan sumuslib.PublicKey, 32), make(chan sumuslib.PublicKey, 32)
 	defer close(walletToTrack)
 	defer close(walletToUntrack)
+
+	// carries latest parsed block ID (just a dummy channel here)
+	var parsedBlockChan = make(chan *big.Int)
+	defer close(parsedBlockChan)
 
 	// fresh block observer
 	var blockObserver *blockobserver.Observer
@@ -331,6 +334,7 @@ func main() {
 			latestBlockID,
 			rpcPool,
 			parsedTX,
+			parsedBlockChan,
 			mtxTaskDuration, mtxQueueGauge,
 			logger.WithField("task", "block_observer"),
 		)
@@ -341,7 +345,7 @@ func main() {
 		blockObserverTask, _ = gotask.NewTask("block_observer", blockObserver.Task)
 	}
 
-	// range of blocks parser
+	// blocks range parser
 	var blockRanger *blockranger.Ranger
 	if rangerParseFrom != nil {
 		b, err := blockranger.New(
@@ -349,6 +353,7 @@ func main() {
 			latestBlockID,
 			rpcPool,
 			parsedTX,
+			parsedBlockChan,
 			mtxTaskDuration,
 			logger.WithField("task", "block_ranger"),
 		)
@@ -471,6 +476,15 @@ func main() {
 		}
 
 		txSignerTask, _ = gotask.NewTask("tx_signer", s.Task)
+	}
+
+	// latest block ID chan consumer
+	{
+		go func() {
+			for {
+				_ = <-parsedBlockChan
+			}
+		}()
 	}
 
 	// metrics server

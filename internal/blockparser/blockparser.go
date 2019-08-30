@@ -13,6 +13,7 @@ import (
 type Parser struct {
 	rpcpool *rpcpool.Pool
 	pubTX   chan<- *Transaction
+	blockID chan<- *big.Int
 
 	mtxTaskDuration *prometheus.SummaryVec
 }
@@ -21,11 +22,13 @@ type Parser struct {
 func New(
 	rpcpool *rpcpool.Pool,
 	pubTX chan<- *Transaction,
+	blockID chan<- *big.Int,
 	mtxTaskDuration *prometheus.SummaryVec,
 ) (*Parser, error) {
 	ret := &Parser{
 		rpcpool:         rpcpool,
 		pubTX:           pubTX,
+		blockID:         blockID,
 		mtxTaskDuration: mtxTaskDuration,
 	}
 	return ret, nil
@@ -54,5 +57,8 @@ func (p *Parser) Parse(block *big.Int) error {
 	if p.mtxTaskDuration != nil {
 		p.mtxTaskDuration.WithLabelValues("blockparser_parse").Observe(time.Since(t).Seconds())
 	}
+
+	// send as parsed
+	p.blockID <- new(big.Int).Set(block)
 	return nil
 }

@@ -23,6 +23,7 @@ import (
 	"github.com/void616/gm-mint-sender/internal/version"
 	"github.com/void616/gm-mint-sender/internal/watcher/db"
 	"github.com/void616/gm-mint-sender/internal/watcher/db/mysql"
+	"github.com/void616/gm-mint-sender/internal/watcher/db/types"
 	"github.com/void616/gm-mint-sender/internal/watcher/notifier"
 	serviceNats "github.com/void616/gm-mint-sender/internal/watcher/transport/nats"
 	"github.com/void616/gm-mint-sender/internal/watcher/txsaver"
@@ -34,15 +35,16 @@ import (
 )
 
 var (
-	logger            *logrus.Logger
-	group             *gotask.Group
-	blockObserverTask *gotask.Task
-	blockRangerTask   *gotask.Task
-	txFilterTask      *gotask.Task
-	txSaverTask       *gotask.Task
-	natsTransportTask *gotask.Task
-	notifierTask      *gotask.Task
-	metricsTask       *gotask.Task
+	logger              *logrus.Logger
+	group               *gotask.Group
+	blockObserverTask   *gotask.Task
+	blockRangerTask     *gotask.Task
+	txFilterTask        *gotask.Task
+	txSaverTask         *gotask.Task
+	natsTransportTask   *gotask.Task
+	notifierTask        *gotask.Task
+	metricsTask         *gotask.Task
+	lastParsedBlockTask *gotask.Task
 )
 
 func main() {
@@ -225,8 +227,12 @@ func main() {
 		}
 	}
 
-	// get latest block ID
-	latestBlockID := new(big.Int)
+	// carries latest parsed block ID
+	var parsedBlockChan = make(chan *big.Int)
+	defer close(parsedBlockChan)
+
+	// get latest block ID (network)
+	var latestBlockID = new(big.Int)
 	{
 		c, err := rpcPool.Get()
 		if err != nil {
@@ -244,21 +250,46 @@ func main() {
 		c.Close()
 	}
 
-	// parser transactions chan
-	parsedTX := make(chan *blockparser.Transaction, 256)
+	// get latest parsed block ID (DB)
+	var latestParsedBlockID = new(big.Int)
+	{
+		latestParsed, err := dao.GetSetting(types.SettingLatestBlock, "0")
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to read latest parsed block ID")
+		}
+		if _, ok := latestParsedBlockID.SetString(latestParsed, 10); !ok || latestParsedBlockID.Cmp(new(big.Int)) < 0 {
+			logger.WithError(err).Fatal("Failed to set latest parsed block ID")
+		}
+		if latestParsedBlockID.Cmp(new(big.Int)) == 0 {
+			latestParsedBlockID.Set(latestBlockID)
+			dao.PutSetting(types.SettingLatestBlock, latestParsedBlockID.String())
+		}
+	}
+
+	// block ID, explicitly set via args, to parse from
+	var userParseFromBlockID *big.Int
+	if *rangerParseFrom != "" {
+		userParseFromBlockID = new(big.Int)
+		if _, ok := userParseFromBlockID.SetString(*rangerParseFrom, 10); !ok || userParseFromBlockID.Cmp(new(big.Int)) < 0 {
+			logger.Fatal("Failed to set blocks range from app argument")
+		}
+	}
+
+	// carries parsed transactions
+	var parsedTX = make(chan *blockparser.Transaction, 256)
 	defer close(parsedTX)
 
-	// filtered transactions chan
-	filteredTX := make(chan *blockparser.Transaction, 256)
+	// carries filtered transactions
+	var filteredTX = make(chan *blockparser.Transaction, 256)
 	defer close(filteredTX)
 
-	// a pair of chans to add/remove wallets to/from filter
-	walletToTrack, walletToUntrack := make(chan sumuslib.PublicKey, 256), make(chan sumuslib.PublicKey, 256)
+	// carries public keys of wallets to add/remove from transactions filter
+	var walletToTrack, walletToUntrack = make(chan sumuslib.PublicKey, 256), make(chan sumuslib.PublicKey, 256)
 	defer close(walletToTrack)
 	defer close(walletToUntrack)
 
-	// chan to add/remove a wallet:service pair to/from txsaver
-	walletSubs := make(chan walletservice.WalletSub, 512)
+	// carries wallet:service pairs to add/remove from transactions saver
+	var walletSubs = make(chan walletservice.WalletSub, 512)
 	defer close(walletSubs)
 
 	// fresh block observer
@@ -268,6 +299,7 @@ func main() {
 			latestBlockID,
 			rpcPool,
 			parsedTX,
+			parsedBlockChan,
 			mtxTaskDuration, mtxQueueGauge,
 			logger.WithField("task", "block_observer"),
 		)
@@ -278,30 +310,34 @@ func main() {
 		blockObserverTask, _ = gotask.NewTask("block_observer", blockObserver.Task)
 	}
 
-	// range of blocks parser
+	// blocks range parser (from DB or from arg)
 	var blockRanger *blockranger.Ranger
-	if *rangerParseFrom != "" {
-		from, ok := big.NewInt(0).SetString(*rangerParseFrom, 10)
-		if !ok || from.Cmp(new(big.Int)) < 0 {
-			logger.Fatal("Invalid range start")
+	{
+		// from: set from DB
+		from := new(big.Int).Add(latestParsedBlockID, big.NewInt(1))
+		// from: user has specified lesser ID
+		if userParseFromBlockID != nil {
+			if from.Cmp(userParseFromBlockID) > 0 {
+				from.Set(userParseFromBlockID)
+			}
 		}
-		if from.Cmp(latestBlockID) > 0 {
-			logger.Fatalf("Invalid range start. Current latest block ID is %v", latestBlockID.String())
+		// latest >= from
+		if latestBlockID.Cmp(from) >= 0 {
+			b, err := blockranger.New(
+				from,
+				latestBlockID,
+				rpcPool,
+				parsedTX,
+				parsedBlockChan,
+				mtxTaskDuration,
+				logger.WithField("task", "block_ranger"),
+			)
+			if err != nil {
+				logger.WithError(err).Fatal("Failed to setup block ranger")
+			}
+			blockRanger = b
+			blockRangerTask, _ = gotask.NewTask("block_ranger", blockRanger.Task)
 		}
-
-		b, err := blockranger.New(
-			from,
-			latestBlockID,
-			rpcPool,
-			parsedTX,
-			mtxTaskDuration,
-			logger.WithField("task", "block_ranger"),
-		)
-		if err != nil {
-			logger.WithError(err).Fatal("Failed to setup block ranger")
-		}
-		blockRanger = b
-		blockRangerTask, _ = gotask.NewTask("block_ranger", blockRanger.Task)
 	}
 
 	// tx filter
@@ -415,6 +451,34 @@ func main() {
 		metricsTask, _ = gotask.NewTask("metrics", m.Task)
 	}
 
+	// last parsed block ID saver
+	{
+		lastParsedBlockTask, _ = gotask.NewTask("blockid_saver", func(token *gotask.Token, arg ...interface{}) {
+			var oldid = arg[0].(*big.Int)
+			var newid = new(big.Int)
+			var save = func() {
+				if newid.Cmp(oldid) > 0 {
+					dao.PutSetting(types.SettingLatestBlock, newid.String())
+					oldid.Set(newid)
+				}
+			}
+			for !token.Stopped() {
+				select {
+				case id := <-parsedBlockChan:
+					if id.Cmp(newid) > 0 {
+						newid.Set(id)
+						if newid.Cmp(new(big.Int).Add(oldid, big.NewInt(10))) > 0 {
+							save()
+						}
+					}
+				case <-time.After(time.Millisecond * 250):
+					save()
+				}
+			}
+			save()
+		}, new(big.Int).Set(latestParsedBlockID))
+	}
+
 	// handle termination signal
 	go func() {
 		sigchan := make(chan os.Signal, 1)
@@ -427,6 +491,7 @@ func main() {
 	group = gotask.NewGroup("main")
 	group.Log(tasksLogger)
 	tasks := []*gotask.Task{
+		lastParsedBlockTask,
 		metricsTask,
 		blockObserverTask,
 		blockRangerTask,
@@ -463,6 +528,7 @@ func onStop() {
 	stopWait(txFilterTask)
 	stopWait(txSaverTask)
 	stopWait(metricsTask)
+	stopWait(lastParsedBlockTask)
 	group.Stop()
 }
 

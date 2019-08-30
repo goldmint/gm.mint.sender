@@ -20,12 +20,14 @@ var Migrations = []*gormigrate.Migration{
 				AddUniqueIndex("ux_watcher_incomings_servicetodigest", "service", "to", "digest").
 				AddIndex("ix_watcher_incomings_notified", "notified").
 				AddIndex("ix_watcher_incomings_notifyat", "notify_at").
+				CreateTable(&model.Setting{}).
 				Error
 		},
 		Rollback: func(tx *gorm.DB) error {
 			return tx.
 				DropTable(&model.Wallet{}).
 				DropTable(&model.Incoming{}).
+				DropTable(&model.Setting{}).
 				Error
 		},
 	},

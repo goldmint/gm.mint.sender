@@ -28,6 +28,7 @@ func New(
 	toBlockID *big.Int,
 	pool *rpcpool.Pool,
 	pubTX chan<- *blockparser.Transaction,
+	blockID chan<- *big.Int,
 	mtxTaskDuration *prometheus.SummaryVec,
 	logger *logrus.Entry,
 ) (*Ranger, error) {
@@ -45,7 +46,7 @@ func New(
 		return nil, errors.New("invalid range")
 	}
 
-	parser, err := blockparser.New(pool, pubTX, mtxTaskDuration)
+	parser, err := blockparser.New(pool, pubTX, blockID, mtxTaskDuration)
 	if err != nil {
 		return nil, err
 	}

@@ -16,6 +16,7 @@ type Observer struct {
 	parser  *blockparser.Parser
 	from    *big.Int
 	pubTX   chan<- *blockparser.Transaction
+	blockID chan<- *big.Int
 
 	mtxTaskDuration *prometheus.SummaryVec
 	mtxQueueGauge   *prometheus.GaugeVec
@@ -26,12 +27,13 @@ func New(
 	from *big.Int,
 	pool *rpcpool.Pool,
 	pubTX chan<- *blockparser.Transaction,
+	blockID chan<- *big.Int,
 	mtxTaskDuration *prometheus.SummaryVec,
 	mtxQueueGauge *prometheus.GaugeVec,
 	logger *logrus.Entry,
 ) (*Observer, error) {
 
-	parser, err := blockparser.New(pool, pubTX, mtxTaskDuration)
+	parser, err := blockparser.New(pool, pubTX, blockID, mtxTaskDuration)
 	if err != nil {
 		return nil, err
 	}
