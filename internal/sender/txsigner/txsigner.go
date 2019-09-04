@@ -6,7 +6,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
-	"github.com/void616/gm-mint-sender/internal/rpcpool"
+	"github.com/void616/gm-mint-sender/internal/mint/rpcpool"
 	"github.com/void616/gm-mint-sender/internal/sender/db"
 	sumuslib "github.com/void616/gm-sumuslib"
 	"github.com/void616/gm-sumuslib/amount"
@@ -23,10 +23,7 @@ type Signer struct {
 	pool    *rpcpool.Pool
 	signers map[sumuslib.PublicKey]*SignerData
 	dao     db.DAO
-
-	mtxBalanceGauge *prometheus.GaugeVec
-	mtxTaskDuration *prometheus.SummaryVec
-	mtxQueueGauge   *prometheus.GaugeVec
+	metrics *Metrics
 }
 
 // SignerData describes particular signer
@@ -46,9 +43,6 @@ func New(
 	pool *rpcpool.Pool,
 	dao db.DAO,
 	signers []*sumusSigner.Signer,
-	mtxBalanceGauge *prometheus.GaugeVec,
-	mtxTaskDuration *prometheus.SummaryVec,
-	mtxQueueGauge *prometheus.GaugeVec,
 	logger *logrus.Entry,
 ) (*Signer, error) {
 
@@ -103,12 +97,6 @@ func New(
 			failed:      false,
 		}
 
-		// metrics
-		if mtxBalanceGauge != nil {
-			mtxBalanceGauge.WithLabelValues(pubkey.String(), "gold").Set(walletState.Balance.Gold.Float64())
-			mtxBalanceGauge.WithLabelValues(pubkey.String(), "mnt").Set(walletState.Balance.Mnt.Float64())
-		}
-
 		logGold, logMnt := strconv.FormatFloat(walletState.Balance.Gold.Float64(), 'f', 6, 64), strconv.FormatFloat(walletState.Balance.Mnt.Float64(), 'f', 6, 64)
 		if emitter {
 			logGold, logMnt = "emitter", "emitter"
@@ -122,13 +110,29 @@ func New(
 	}
 
 	s := &Signer{
-		logger:          logger,
-		dao:             dao,
-		pool:            pool,
-		signers:         signerz,
-		mtxBalanceGauge: mtxBalanceGauge,
-		mtxTaskDuration: mtxTaskDuration,
-		mtxQueueGauge:   mtxQueueGauge,
+		logger:  logger,
+		dao:     dao,
+		pool:    pool,
+		signers: signerz,
 	}
 	return s, nil
+}
+
+// Metrics data
+type Metrics struct {
+	Balance *prometheus.GaugeVec
+	Queue   prometheus.Gauge
+}
+
+// AddMetrics adds metrics counters and should be called before service launch
+func (s *Signer) AddMetrics(m *Metrics) {
+	s.metrics = m
+
+	if m != nil {
+		// metrics
+		for pub, sig := range s.signers {
+			m.Balance.WithLabelValues(pub.String(), "gold").Set(sig.gold.Float64())
+			m.Balance.WithLabelValues(pub.String(), "mnt").Set(sig.mnt.Float64())
+		}
+	}
 }

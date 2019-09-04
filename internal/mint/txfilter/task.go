@@ -3,7 +3,7 @@ package txfilter
 import (
 	"time"
 
-	"github.com/void616/gm-mint-sender/internal/blockparser"
+	"github.com/void616/gm-mint-sender/internal/mint/blockparser"
 	"github.com/void616/gotask"
 )
 
@@ -41,29 +41,15 @@ func (f *Filter) Task(token *gotask.Token) {
 		{
 			if len(buf) > 0 {
 				// metrics
-				if f.mtxTxVolumeCounter != nil {
+				if f.metrics != nil {
 					for _, tx := range buf {
-						f.mtxTxVolumeCounter.WithLabelValues("gold").Add(tx.AmountGOLD.Float64())
-						f.mtxTxVolumeCounter.WithLabelValues("mnt").Add(tx.AmountMNT.Float64())
+						f.metrics.TxVolume.WithLabelValues("gold").Add(tx.AmountGOLD.Float64())
+						f.metrics.TxVolume.WithLabelValues("mnt").Add(tx.AmountMNT.Float64())
 					}
 				}
 
-				// metrics
-				if f.mtxQueueGauge != nil {
-					f.mtxQueueGauge.WithLabelValues("txfilter_flush").Set(float64(len(buf)))
-				}
-				t := time.Now()
-
 				for _, tx := range buf {
 					f.out <- tx
-				}
-
-				// metrics
-				if f.mtxTaskDuration != nil {
-					f.mtxTaskDuration.WithLabelValues("txfilter_flush").Observe(time.Since(t).Seconds())
-				}
-				if f.mtxQueueGauge != nil {
-					f.mtxQueueGauge.WithLabelValues("txfilter_flush").Set(0)
 				}
 
 				f.logger.Debugf("Flushed %v transactions", len(buf))

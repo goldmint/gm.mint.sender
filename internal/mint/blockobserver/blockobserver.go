@@ -3,10 +3,9 @@ package blockobserver
 import (
 	"math/big"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
-	"github.com/void616/gm-mint-sender/internal/blockparser"
-	"github.com/void616/gm-mint-sender/internal/rpcpool"
+	"github.com/void616/gm-mint-sender/internal/mint/blockparser"
+	"github.com/void616/gm-mint-sender/internal/mint/rpcpool"
 )
 
 // Observer listens for fresh blocks on an RPC connection
@@ -17,9 +16,6 @@ type Observer struct {
 	from    *big.Int
 	pubTX   chan<- *blockparser.Transaction
 	blockID chan<- *big.Int
-
-	mtxTaskDuration *prometheus.SummaryVec
-	mtxQueueGauge   *prometheus.GaugeVec
 }
 
 // New Observer instance
@@ -28,23 +24,24 @@ func New(
 	pool *rpcpool.Pool,
 	pubTX chan<- *blockparser.Transaction,
 	blockID chan<- *big.Int,
-	mtxTaskDuration *prometheus.SummaryVec,
-	mtxQueueGauge *prometheus.GaugeVec,
 	logger *logrus.Entry,
 ) (*Observer, error) {
 
-	parser, err := blockparser.New(pool, pubTX, blockID, mtxTaskDuration)
+	parser, err := blockparser.New(pool, pubTX, blockID)
 	if err != nil {
 		return nil, err
 	}
 
 	o := &Observer{
-		rpcpool:         pool,
-		logger:          logger,
-		parser:          parser,
-		from:            from,
-		mtxTaskDuration: mtxTaskDuration,
-		mtxQueueGauge:   mtxQueueGauge,
+		rpcpool: pool,
+		logger:  logger,
+		parser:  parser,
+		from:    from,
 	}
 	return o, nil
+}
+
+// AddMetrics adds metrics counters and should be called before service launch
+func (o *Observer) AddMetrics(parser *blockparser.Metrics) {
+	o.parser.AddMetrics(parser)
 }

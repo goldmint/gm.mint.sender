@@ -1,7 +1,7 @@
 package txfilter
 
 import (
-	"github.com/void616/gm-mint-sender/internal/blockparser"
+	"github.com/void616/gm-mint-sender/internal/mint/blockparser"
 	sumuslib "github.com/void616/gm-sumuslib"
 )
 
@@ -24,8 +24,10 @@ func (f *Filter) roiCheck(tx *blockparser.Transaction) bool {
 func (f *Filter) addWallet(p sumuslib.PublicKey) bool {
 	if _, ok := f.roiWallets[p]; !ok {
 		f.roiWallets[p] = struct{}{}
-		if f.mtxROIWalletsGauge != nil {
-			f.mtxROIWalletsGauge.Add(1)
+
+		// metrics
+		if f.metrics != nil {
+			f.metrics.ROIWallets.Add(1)
 		}
 		return true
 	}
@@ -37,8 +39,10 @@ func (f *Filter) addWallet(p sumuslib.PublicKey) bool {
 func (f *Filter) removeWallet(p sumuslib.PublicKey) bool {
 	if _, ok := f.roiWallets[p]; ok {
 		delete(f.roiWallets, p)
-		if f.mtxROIWalletsGauge != nil {
-			f.mtxROIWalletsGauge.Sub(1)
+
+		// metrics
+		if f.metrics != nil {
+			f.metrics.ROIWallets.Sub(1)
 		}
 		return true
 	}

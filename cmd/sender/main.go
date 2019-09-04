@@ -15,21 +15,22 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+
 	"github.com/sirupsen/logrus"
-	"github.com/void616/gm-mint-sender/internal/blockobserver"
-	"github.com/void616/gm-mint-sender/internal/blockparser"
-	"github.com/void616/gm-mint-sender/internal/blockranger"
 	"github.com/void616/gm-mint-sender/internal/metrics"
-	"github.com/void616/gm-mint-sender/internal/rpcpool"
+	"github.com/void616/gm-mint-sender/internal/mint/blockobserver"
+	"github.com/void616/gm-mint-sender/internal/mint/blockparser"
+	"github.com/void616/gm-mint-sender/internal/mint/blockranger"
+	"github.com/void616/gm-mint-sender/internal/mint/rpcpool"
+	"github.com/void616/gm-mint-sender/internal/mint/txfilter"
+	serviceAPI "github.com/void616/gm-mint-sender/internal/sender/api"
+	serviceNats "github.com/void616/gm-mint-sender/internal/sender/api/nats"
 	"github.com/void616/gm-mint-sender/internal/sender/db"
 	"github.com/void616/gm-mint-sender/internal/sender/db/mysql"
 	"github.com/void616/gm-mint-sender/internal/sender/db/types"
 	"github.com/void616/gm-mint-sender/internal/sender/notifier"
-	"github.com/void616/gm-mint-sender/internal/sender/senderservice"
-	serviceNats "github.com/void616/gm-mint-sender/internal/sender/transport/nats"
 	"github.com/void616/gm-mint-sender/internal/sender/txconfirmer"
 	"github.com/void616/gm-mint-sender/internal/sender/txsigner"
-	"github.com/void616/gm-mint-sender/internal/txfilter"
 	"github.com/void616/gm-mint-sender/internal/version"
 	sumuslib "github.com/void616/gm-sumuslib"
 	"github.com/void616/gm-sumuslib/signer"
@@ -194,68 +195,6 @@ func main() {
 		}
 	}
 
-	// metrics
-	var mtxSenderServiceRequestDuration *prometheus.SummaryVec
-	var mtxNatsRequestDuration *prometheus.SummaryVec
-	var mtxTaskDuration *prometheus.SummaryVec
-	var mtxQueueGauge *prometheus.GaugeVec
-	var mtxTxVolumeCounter *prometheus.CounterVec
-	var mtxWalletBalanceGauge *prometheus.GaugeVec
-	var mtxErrorCounter *prometheus.CounterVec
-	if *metricsPort != 0 {
-		ns := "gmmintsender"
-		ss := "sender"
-
-		mtxSenderServiceRequestDuration = promauto.NewSummaryVec(prometheus.SummaryOpts{
-			Name:      "sendersvc_request_duration",
-			Help:      "Sender service request duration (seconds)",
-			Namespace: ns, Subsystem: ss,
-		}, []string{"method"})
-
-		mtxNatsRequestDuration = promauto.NewSummaryVec(prometheus.SummaryOpts{
-			Name:      "natsapi_request_duration",
-			Help:      "Nats API request duration",
-			Namespace: ns, Subsystem: ss,
-		}, []string{"method"})
-
-		mtxTaskDuration = promauto.NewSummaryVec(prometheus.SummaryOpts{
-			Name:      "task_duration",
-			Help:      "Internal task duration (seconds)",
-			Namespace: ns, Subsystem: ss,
-		}, []string{"task"})
-
-		mtxQueueGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Name:      "queue_size",
-			Help:      "Internal queue size",
-			Namespace: ns, Subsystem: ss,
-		}, []string{"queue"})
-
-		mtxTxVolumeCounter = promauto.NewCounterVec(prometheus.CounterOpts{
-			Name:      "tx_volume",
-			Help:      "Volume of sent transactions",
-			Namespace: ns, Subsystem: ss,
-		}, []string{"token"})
-
-		mtxWalletBalanceGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Name:      "wallets",
-			Help:      "Sender wallet balance",
-			Namespace: ns, Subsystem: ss,
-		}, []string{"sender", "token"})
-
-		mtxErrorCounter = promauto.NewCounterVec(prometheus.CounterOpts{
-			Name:      "errors",
-			Help:      "Error counter",
-			Namespace: ns, Subsystem: ss,
-		}, []string{"source", "level"})
-
-		hook := &logrusErrorHook{
-			addError: func(source string, level logrus.Level) {
-				mtxErrorCounter.WithLabelValues(source, level.String()).Add(1)
-			},
-		}
-		logger.AddHook(hook)
-	}
-
 	// rpc pool
 	var rpcPool *rpcpool.Pool
 	{
@@ -335,7 +274,6 @@ func main() {
 			rpcPool,
 			parsedTX,
 			parsedBlockChan,
-			mtxTaskDuration, mtxQueueGauge,
 			logger.WithField("task", "block_observer"),
 		)
 		if err != nil {
@@ -354,7 +292,6 @@ func main() {
 			rpcPool,
 			parsedTX,
 			parsedBlockChan,
-			mtxTaskDuration,
 			logger.WithField("task", "block_ranger"),
 		)
 		if err != nil {
@@ -376,7 +313,6 @@ func main() {
 			parsedTX, filteredTX,
 			walletToTrack, walletToUntrack,
 			filter,
-			nil, mtxTxVolumeCounter, mtxTaskDuration, mtxQueueGauge,
 			logger.WithField("task", "tx_filter"),
 		)
 		if err != nil {
@@ -403,7 +339,6 @@ func main() {
 		c, err := txconfirmer.New(
 			filteredTX,
 			dao,
-			mtxTaskDuration,
 			logger.WithField("task", "tx_confirmer"),
 		)
 		if err != nil {
@@ -414,29 +349,27 @@ func main() {
 		txConfirmerTask, _ = gotask.NewTask("tx_confirmer", txConfirmer.Task)
 	}
 
-	// wallet service
-	var senderService *senderservice.Service
+	// api
+	var api *serviceAPI.API
 	{
-		s, err := senderservice.New(
+		a, err := serviceAPI.New(
 			dao,
-			mtxSenderServiceRequestDuration,
-			logger.WithField("task", "sender_service"),
+			logger.WithField("task", "api"),
 		)
 		if err != nil {
-			logger.WithError(err).Fatal("Failed to setup sender service")
+			logger.WithError(err).Fatal("Failed to setup API")
 		}
-		senderService = s
+		api = a
 	}
 
 	// nats transport
-	var natsTransport *serviceNats.Service
+	var natsTransport *serviceNats.Nats
 	{
 		n, cls, err := serviceNats.New(
 			*natsURL,
 			formatPrefix(*natsSubjPrefix, "."),
-			senderService,
-			mtxNatsRequestDuration, mtxTaskDuration, mtxQueueGauge,
-			logger.WithField("task", "nats_transport"),
+			api,
+			logger.WithField("task", "nats"),
 		)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to setup Nats transport")
@@ -444,7 +377,7 @@ func main() {
 		defer cls()
 
 		natsTransport = n
-		natsTransportTask, _ = gotask.NewTask("nats_transport", n.Task)
+		natsTransportTask, _ = gotask.NewTask("nats", n.Task)
 	}
 
 	// notifier
@@ -452,7 +385,6 @@ func main() {
 		n, err := notifier.New(
 			dao,
 			natsTransport,
-			mtxTaskDuration, mtxQueueGauge,
 			logger.WithField("task", "notifier"),
 		)
 		if err != nil {
@@ -463,18 +395,19 @@ func main() {
 	}
 
 	// tx signer
+	var txSigner *txsigner.Signer
 	{
 		s, err := txsigner.New(
 			rpcPool,
 			dao,
 			senderSigners,
-			mtxWalletBalanceGauge, mtxTaskDuration, mtxQueueGauge,
 			logger.WithField("task", "tx_signer"),
 		)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to setup transaction signer")
 		}
 
+		txSigner = s
 		txSignerTask, _ = gotask.NewTask("tx_signer", s.Task)
 	}
 
@@ -489,6 +422,86 @@ func main() {
 
 	// metrics server
 	if *metricsPort > 0 {
+		var ns = "gm"
+		var ss = "mintsender_sender"
+
+		// api nats
+		{
+			m := serviceNats.Metrics{
+				RequestDuration: promauto.NewHistogramVec(prometheus.HistogramOpts{
+					Name:      "nats_request_duration",
+					Help:      "API Nats transport incoming request duration (seconds)",
+					Namespace: ns,
+					Subsystem: ss,
+				}, []string{"method"}),
+				NotificationDuration: promauto.NewHistogram(prometheus.HistogramOpts{
+					Name:      "nats_notification_duration",
+					Help:      "API Nats transport outgoing notification duration (seconds)",
+					Namespace: ns,
+					Subsystem: ss,
+				}),
+			}
+			natsTransport.AddMetrics(&m)
+		}
+
+		// block parser
+		{
+			m := blockparser.Metrics{
+				RequestDuration: promauto.NewHistogram(prometheus.HistogramOpts{
+					Name:      "blockparser_request_duration",
+					Help:      "Block parser delivery duration (seconds)",
+					Namespace: ns,
+					Subsystem: ss,
+				}),
+				ParsingDuration: promauto.NewHistogram(prometheus.HistogramOpts{
+					Name:      "blockparser_parsing_duration",
+					Help:      "Block parser reading duration (seconds)",
+					Namespace: ns,
+					Subsystem: ss,
+				}),
+			}
+			blockObserver.AddMetrics(&m)
+			blockRanger.AddMetrics(&m)
+		}
+
+		// tx filter
+		{
+			m := txfilter.Metrics{
+				ROIWallets: promauto.NewGauge(prometheus.GaugeOpts{
+					Name:      "txfilter_roi_wallets",
+					Help:      "Transaction filter wallets count in ROI",
+					Namespace: ns,
+					Subsystem: ss,
+				}),
+				TxVolume: promauto.NewCounterVec(prometheus.CounterOpts{
+					Name:      "txfilter_txvolume",
+					Help:      "Amount of token sent",
+					Namespace: ns,
+					Subsystem: ss,
+				}, []string{"token"}),
+			}
+			txFilter.AddMetrics(&m)
+		}
+
+		// tx signer
+		{
+			m := txsigner.Metrics{
+				Balance: promauto.NewGaugeVec(prometheus.GaugeOpts{
+					Name:      "txsigner_balance",
+					Help:      "Sender wallets balance",
+					Namespace: ns,
+					Subsystem: ss,
+				}, []string{"wallet", "token"}),
+				Queue: promauto.NewGauge(prometheus.GaugeOpts{
+					Name:      "txsigner_queue",
+					Help:      "Transaction signer queue size",
+					Namespace: ns,
+					Subsystem: ss,
+				}),
+			}
+			txSigner.AddMetrics(&m)
+		}
+
 		m := metrics.New(uint16(*metricsPort), logger.WithField("task", "metrics"))
 		metricsTask, _ = gotask.NewTask("metrics", m.Task)
 	}

@@ -22,10 +22,11 @@ An event from watcher.
 ```
 message RefillEvent {
   string service = 1;      // Service name (to differentiate multiple requestors): 1..64
-  string publicKey = 2;    // Wallet address in Base58
-  string token = 3;        // GOLD or MNT
-  string amount = 4;       // Token amount in major units: 1.234 (18 decimal places)
-  string transaction = 5;  // Digest of the refilling tx in Base58
+	string publicKey = 2;    // Destination (watching) wallet address in Base58
+	string from = 3;         // Source wallet address in Base58
+	string token = 4;        // GOLD or MNT
+	string amount = 5;       // Token amount in major units: 1.234 (18 decimal places)
+	string transaction = 6;  // Digest of the refilling tx in Base58
 }
 ```
 ### Reply (ACK)

@@ -84,9 +84,9 @@ func (s *Signer) processRequest(snd *types.Sending, currentBlock *big.Int) (post
 					}
 
 					// metrics
-					if s.mtxBalanceGauge != nil {
-						s.mtxBalanceGauge.WithLabelValues(signer.public.String(), "gold").Set(signer.gold.Float64())
-						s.mtxBalanceGauge.WithLabelValues(signer.public.String(), "mnt").Set(signer.mnt.Float64())
+					if s.metrics != nil {
+						s.metrics.Balance.WithLabelValues(signer.public.String(), "gold").Set(signer.gold.Float64())
+						s.metrics.Balance.WithLabelValues(signer.public.String(), "mnt").Set(signer.mnt.Float64())
 					}
 				}
 			}()

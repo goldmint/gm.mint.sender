@@ -1,9 +1,8 @@
 package txconfirmer
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
-	"github.com/void616/gm-mint-sender/internal/blockparser"
+	"github.com/void616/gm-mint-sender/internal/mint/blockparser"
 	"github.com/void616/gm-mint-sender/internal/sender/db"
 )
 
@@ -12,22 +11,18 @@ type Confirmer struct {
 	logger *logrus.Entry
 	in     <-chan *blockparser.Transaction
 	dao    db.DAO
-
-	mtxTaskDuration *prometheus.SummaryVec
 }
 
 // New Confirmer instance
 func New(
 	in <-chan *blockparser.Transaction,
 	dao db.DAO,
-	mtxTaskDuration *prometheus.SummaryVec,
 	logger *logrus.Entry,
 ) (*Confirmer, error) {
 	f := &Confirmer{
-		logger:          logger,
-		in:              in,
-		dao:             dao,
-		mtxTaskDuration: mtxTaskDuration,
+		logger: logger,
+		in:     in,
+		dao:    dao,
 	}
 	return f, nil
 }

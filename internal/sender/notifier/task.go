@@ -26,19 +26,11 @@ func (n *Notifier) Task(token *gotask.Token) {
 			continue
 		}
 
-		// metrics
-		if n.mtxQueueGauge != nil {
-			n.mtxQueueGauge.WithLabelValues("notifier_shot").Set(float64(len(list)))
-		}
-
 		out := false
 		for _, snd := range list {
 			if out {
 				break
 			}
-
-			// metrics
-			t := time.Now()
 
 			// mark as notified
 			{
@@ -111,16 +103,6 @@ func (n *Notifier) Task(token *gotask.Token) {
 			} else {
 				n.logger.WithField("id", snd.ID).Debug("Notified")
 			}
-
-			// metrics
-			if n.mtxTaskDuration != nil {
-				n.mtxTaskDuration.WithLabelValues("notifier_shot").Observe(time.Since(t).Seconds())
-			}
-		}
-
-		// metrics
-		if n.mtxQueueGauge != nil {
-			n.mtxQueueGauge.WithLabelValues("notifier_shot").Set(0)
 		}
 	}
 }

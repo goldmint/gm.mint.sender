@@ -25,19 +25,11 @@ func (n *Notifier) Task(token *gotask.Token) {
 			continue
 		}
 
-		// metrics
-		if n.mtxQueueGauge != nil {
-			n.mtxQueueGauge.WithLabelValues("notifier_shot").Set(float64(len(list)))
-		}
-
 		out := false
 		for _, inc := range list {
 			if out {
 				break
 			}
-
-			// metrics
-			t := time.Now()
 
 			// mark as notified
 			{
@@ -60,7 +52,7 @@ func (n *Notifier) Task(token *gotask.Token) {
 			}
 
 			// notify
-			err := n.transporter.NotifyRefilling(inc.Service, inc.To, inc.Token, inc.Amount, inc.Digest)
+			err := n.transporter.NotifyRefilling(inc.Service, inc.To, inc.From, inc.Token, inc.Amount, inc.Digest)
 			if err != nil {
 				n.logger.
 					WithField("wallet", inc.To.String()).
@@ -109,16 +101,6 @@ func (n *Notifier) Task(token *gotask.Token) {
 					WithField("tx", inc.Digest.String()).
 					Info("Notified")
 			}
-
-			// metrics
-			if n.mtxTaskDuration != nil {
-				n.mtxTaskDuration.WithLabelValues("notifier_shot").Observe(time.Since(t).Seconds())
-			}
-		}
-
-		// metrics
-		if n.mtxQueueGauge != nil {
-			n.mtxQueueGauge.WithLabelValues("notifier_shot").Set(0)
 		}
 	}
 }

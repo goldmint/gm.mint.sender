@@ -4,10 +4,9 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
-	"github.com/void616/gm-mint-sender/internal/blockparser"
-	"github.com/void616/gm-mint-sender/internal/rpcpool"
+	"github.com/void616/gm-mint-sender/internal/mint/blockparser"
+	"github.com/void616/gm-mint-sender/internal/mint/rpcpool"
 )
 
 // Ranger parses range of blocks sending IDs to the parsers channel
@@ -17,8 +16,6 @@ type Ranger struct {
 	to     *big.Int
 	parser *blockparser.Parser
 	pubTX  chan<- *blockparser.Transaction
-
-	mtxTaskDuration *prometheus.SummaryVec
 }
 
 // New Ranger instance.
@@ -29,7 +26,6 @@ func New(
 	pool *rpcpool.Pool,
 	pubTX chan<- *blockparser.Transaction,
 	blockID chan<- *big.Int,
-	mtxTaskDuration *prometheus.SummaryVec,
 	logger *logrus.Entry,
 ) (*Ranger, error) {
 
@@ -46,7 +42,7 @@ func New(
 		return nil, errors.New("invalid range")
 	}
 
-	parser, err := blockparser.New(pool, pubTX, blockID, mtxTaskDuration)
+	parser, err := blockparser.New(pool, pubTX, blockID)
 	if err != nil {
 		return nil, err
 	}
@@ -58,4 +54,9 @@ func New(
 		parser: parser,
 	}
 	return o, nil
+}
+
+// AddMetrics adds metrics counters and should be called before service launch
+func (r *Ranger) AddMetrics(parser *blockparser.Metrics) {
+	r.parser.AddMetrics(parser)
 }

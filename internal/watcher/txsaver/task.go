@@ -80,20 +80,12 @@ func (s *Saver) Task(token *gotask.Token) {
 				// save to death
 				saved := false
 				for !token.Stopped() && !saved {
-					// metrics
-					t := time.Now()
-
 					if err := s.dao.PutIncoming(models...); err != nil {
 						s.logger.WithError(err).WithField("digest", tx.Digest.String()).Errorf("Failed to save transaction")
 						token.Sleep(time.Second * 10)
 					} else {
 						saved = true
 						savedItems++
-					}
-
-					// metrics
-					if s.mtxTaskDuration != nil {
-						s.mtxTaskDuration.WithLabelValues("txsaver").Observe(time.Since(t).Seconds())
 					}
 				}
 

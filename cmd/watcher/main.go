@@ -14,20 +14,21 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
-	"github.com/void616/gm-mint-sender/internal/blockobserver"
-	"github.com/void616/gm-mint-sender/internal/blockparser"
-	"github.com/void616/gm-mint-sender/internal/blockranger"
 	"github.com/void616/gm-mint-sender/internal/metrics"
-	"github.com/void616/gm-mint-sender/internal/rpcpool"
-	"github.com/void616/gm-mint-sender/internal/txfilter"
+	"github.com/void616/gm-mint-sender/internal/mint/blockobserver"
+	"github.com/void616/gm-mint-sender/internal/mint/blockparser"
+	"github.com/void616/gm-mint-sender/internal/mint/blockranger"
+	"github.com/void616/gm-mint-sender/internal/mint/rpcpool"
+	"github.com/void616/gm-mint-sender/internal/mint/txfilter"
 	"github.com/void616/gm-mint-sender/internal/version"
+	serviceAPI "github.com/void616/gm-mint-sender/internal/watcher/api"
+	apiModels "github.com/void616/gm-mint-sender/internal/watcher/api/model"
+	serviceNats "github.com/void616/gm-mint-sender/internal/watcher/api/nats"
 	"github.com/void616/gm-mint-sender/internal/watcher/db"
 	"github.com/void616/gm-mint-sender/internal/watcher/db/mysql"
 	"github.com/void616/gm-mint-sender/internal/watcher/db/types"
 	"github.com/void616/gm-mint-sender/internal/watcher/notifier"
-	serviceNats "github.com/void616/gm-mint-sender/internal/watcher/transport/nats"
 	"github.com/void616/gm-mint-sender/internal/watcher/txsaver"
-	"github.com/void616/gm-mint-sender/internal/watcher/walletservice"
 	sumuslib "github.com/void616/gm-sumuslib"
 	"github.com/void616/gm-sumusrpc/rpc"
 	"github.com/void616/gotask"
@@ -151,68 +152,6 @@ func main() {
 		}
 	}
 
-	// metrics
-	var mtxWalletServiceRequestDuration *prometheus.SummaryVec
-	var mtxNatsRequestDuration *prometheus.SummaryVec
-	var mtxTaskDuration *prometheus.SummaryVec
-	var mtxQueueGauge *prometheus.GaugeVec
-	var mtxTxVolumeCounter *prometheus.CounterVec
-	var mtxROIWalletsGauge prometheus.Gauge
-	var mtxErrorCounter *prometheus.CounterVec
-	if *metricsPort != 0 {
-		ns := "gmmintsender"
-		ss := "watcher"
-
-		mtxWalletServiceRequestDuration = promauto.NewSummaryVec(prometheus.SummaryOpts{
-			Name:      "walletsvc_request_duration",
-			Help:      "Wallet service requrest duration (seconds)",
-			Namespace: ns, Subsystem: ss,
-		}, []string{"method"})
-
-		mtxNatsRequestDuration = promauto.NewSummaryVec(prometheus.SummaryOpts{
-			Name:      "natsapi_request_duration",
-			Help:      "Nats API requrest duration (seconds)",
-			Namespace: ns, Subsystem: ss,
-		}, []string{"method"})
-
-		mtxTaskDuration = promauto.NewSummaryVec(prometheus.SummaryOpts{
-			Name:      "task_duration",
-			Help:      "Internal task duration (seconds)",
-			Namespace: ns, Subsystem: ss,
-		}, []string{"task"})
-
-		mtxQueueGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Name:      "queue_size",
-			Help:      "Internal queue size",
-			Namespace: ns, Subsystem: ss,
-		}, []string{"queue"})
-
-		mtxTxVolumeCounter = promauto.NewCounterVec(prometheus.CounterOpts{
-			Name:      "tx_volume",
-			Help:      "Volume of received transactions",
-			Namespace: ns, Subsystem: ss,
-		}, []string{"token"})
-
-		mtxROIWalletsGauge = promauto.NewGauge(prometheus.GaugeOpts{
-			Name:      "wallets",
-			Help:      "ROI wallets counter",
-			Namespace: ns, Subsystem: ss,
-		})
-
-		mtxErrorCounter = promauto.NewCounterVec(prometheus.CounterOpts{
-			Name:      "errors",
-			Help:      "Error counter",
-			Namespace: ns, Subsystem: ss,
-		}, []string{"source", "level"})
-
-		hook := &logrusErrorHook{
-			addError: func(source string, level logrus.Level) {
-				mtxErrorCounter.WithLabelValues(source, level.String()).Add(1)
-			},
-		}
-		logger.AddHook(hook)
-	}
-
 	// rpc pool
 	var rpcPool *rpcpool.Pool
 	{
@@ -289,7 +228,7 @@ func main() {
 	defer close(walletToUntrack)
 
 	// carries wallet:service pairs to add/remove from transactions saver
-	var walletSubs = make(chan walletservice.WalletSub, 512)
+	var walletSubs = make(chan apiModels.WalletSub, 512)
 	defer close(walletSubs)
 
 	// fresh block observer
@@ -300,7 +239,6 @@ func main() {
 			rpcPool,
 			parsedTX,
 			parsedBlockChan,
-			mtxTaskDuration, mtxQueueGauge,
 			logger.WithField("task", "block_observer"),
 		)
 		if err != nil {
@@ -329,7 +267,6 @@ func main() {
 				rpcPool,
 				parsedTX,
 				parsedBlockChan,
-				mtxTaskDuration,
 				logger.WithField("task", "block_ranger"),
 			)
 			if err != nil {
@@ -354,7 +291,6 @@ func main() {
 			walletToTrack,
 			walletToUntrack,
 			filter,
-			mtxROIWalletsGauge, mtxTxVolumeCounter, mtxTaskDuration, mtxQueueGauge,
 			logger.WithField("task", "tx_filter"),
 		)
 		if err != nil {
@@ -372,7 +308,6 @@ func main() {
 			walletSubs,
 			walletToUntrack,
 			dao,
-			mtxTaskDuration,
 			logger.WithField("task", "tx_saver"),
 		)
 		if err != nil {
@@ -384,19 +319,18 @@ func main() {
 	}
 
 	// wallet service
-	var walletService *walletservice.Service
+	var api *serviceAPI.API
 	{
-		s, err := walletservice.New(
+		a, err := serviceAPI.New(
 			walletToTrack,
 			walletSubs,
 			dao,
-			mtxWalletServiceRequestDuration,
-			logger.WithField("task", "wallet_service"),
+			logger.WithField("task", "api"),
 		)
 		if err != nil {
-			logger.WithError(err).Fatal("Failed to setup wallet service")
+			logger.WithError(err).Fatal("Failed to setup API")
 		}
-		walletService = s
+		api = a
 	}
 
 	// load all the tracking wallets and subscribed services
@@ -412,14 +346,13 @@ func main() {
 	}
 
 	// nats transport
-	var natsTransport *serviceNats.Service
+	var natsTransport *serviceNats.Nats
 	{
 		n, cls, err := serviceNats.New(
 			*natsURL,
 			formatPrefix(*natsSubjPrefix, "."),
-			walletService,
-			mtxNatsRequestDuration, mtxTaskDuration, mtxQueueGauge,
-			logger.WithField("task", "nats_transport"),
+			api,
+			logger.WithField("task", "nats"),
 		)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to setup Nats transport")
@@ -427,7 +360,7 @@ func main() {
 		defer cls()
 
 		natsTransport = n
-		natsTransportTask, _ = gotask.NewTask("nats_transport", n.Task)
+		natsTransportTask, _ = gotask.NewTask("nats", n.Task)
 	}
 
 	// refilling notifier
@@ -435,7 +368,6 @@ func main() {
 		n, err := notifier.New(
 			dao,
 			natsTransport,
-			mtxTaskDuration, mtxQueueGauge,
 			logger.WithField("task", "notifier"),
 		)
 		if err != nil {
@@ -447,6 +379,67 @@ func main() {
 
 	// metrics server
 	if *metricsPort > 0 {
+		var ns = "gm"
+		var ss = "mintsender_watcher"
+
+		// api nats
+		{
+			m := serviceNats.Metrics{
+				RequestDuration: promauto.NewHistogramVec(prometheus.HistogramOpts{
+					Name:      "nats_request_duration",
+					Help:      "API Nats transport incoming request duration (seconds)",
+					Namespace: ns,
+					Subsystem: ss,
+				}, []string{"method"}),
+				NotificationDuration: promauto.NewHistogram(prometheus.HistogramOpts{
+					Name:      "nats_notification_duration",
+					Help:      "API Nats transport outgoing notification duration (seconds)",
+					Namespace: ns,
+					Subsystem: ss,
+				}),
+			}
+			natsTransport.AddMetrics(&m)
+		}
+
+		// block parser
+		{
+			m := blockparser.Metrics{
+				RequestDuration: promauto.NewHistogram(prometheus.HistogramOpts{
+					Name:      "blockparser_request_duration",
+					Help:      "Block parser delivery duration (seconds)",
+					Namespace: ns,
+					Subsystem: ss,
+				}),
+				ParsingDuration: promauto.NewHistogram(prometheus.HistogramOpts{
+					Name:      "blockparser_parsing_duration",
+					Help:      "Block parser reading duration (seconds)",
+					Namespace: ns,
+					Subsystem: ss,
+				}),
+			}
+			blockObserver.AddMetrics(&m)
+			blockRanger.AddMetrics(&m)
+		}
+
+		// tx filter
+		{
+			m := txfilter.Metrics{
+				ROIWallets: promauto.NewGauge(prometheus.GaugeOpts{
+					Name:      "txfilter_roi_wallets",
+					Help:      "Transaction filter wallets count in ROI",
+					Namespace: ns,
+					Subsystem: ss,
+				}),
+				TxVolume: promauto.NewCounterVec(prometheus.CounterOpts{
+					Name:      "txfilter_txvolume",
+					Help:      "Amount of token sent",
+					Namespace: ns,
+					Subsystem: ss,
+				}, []string{"token"}),
+			}
+			txFilter.AddMetrics(&m)
+		}
+
 		m := metrics.New(uint16(*metricsPort), logger.WithField("task", "metrics"))
 		metricsTask, _ = gotask.NewTask("metrics", m.Task)
 	}

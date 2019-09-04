@@ -11,14 +11,19 @@ import (
 )
 
 // NotifyRefilling sends event
-func (s *Service) NotifyRefilling(service string, addr sumuslib.PublicKey, t sumuslib.Token, a *amount.Amount, tx sumuslib.Digest) error {
+func (n *Nats) NotifyRefilling(service string, to, from sumuslib.PublicKey, t sumuslib.Token, a *amount.Amount, tx sumuslib.Digest) error {
 
 	// metrics
-	mt := time.Now()
+	if n.metrics != nil {
+		defer func(t time.Time) {
+			n.metrics.NotificationDuration.Observe(time.Since(t).Seconds())
+		}(time.Now())
+	}
 
 	reqModel := &walletsvc.RefillEvent{
 		Service:     service,
-		PublicKey:   addr.String(),
+		PublicKey:   to.String(),
+		From:        from.String(),
 		Token:       t.String(),
 		Amount:      a.String(),
 		Transaction: tx.String(),
@@ -29,7 +34,7 @@ func (s *Service) NotifyRefilling(service string, addr sumuslib.PublicKey, t sum
 		return err
 	}
 
-	msg, err := s.natsConnection.Request(s.subjPrefix+walletsvc.SubjectRefill, req, time.Second*5)
+	msg, err := n.natsConnection.Request(n.subjPrefix+walletsvc.SubjectRefill, req, time.Second*5)
 	if err != nil {
 		return err
 	}
@@ -41,11 +46,6 @@ func (s *Service) NotifyRefilling(service string, addr sumuslib.PublicKey, t sum
 
 	if !repModel.GetSuccess() {
 		return fmt.Errorf("service rejection: %v", repModel.GetError())
-	}
-
-	// metrics
-	if s.mtxTaskDuration != nil {
-		s.mtxTaskDuration.WithLabelValues("nats_notifier").Observe(time.Since(mt).Seconds())
 	}
 
 	return nil

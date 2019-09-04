@@ -3,24 +3,22 @@ package txsaver
 import (
 	"sync"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
-	"github.com/void616/gm-mint-sender/internal/blockparser"
+	"github.com/void616/gm-mint-sender/internal/mint/blockparser"
+	"github.com/void616/gm-mint-sender/internal/watcher/api/model"
 	"github.com/void616/gm-mint-sender/internal/watcher/db"
-	"github.com/void616/gm-mint-sender/internal/watcher/walletservice"
 	sumuslib "github.com/void616/gm-sumuslib"
 )
 
 // Saver saves filtered transactions to the DB
 type Saver struct {
-	logger          *logrus.Entry
-	transactions    <-chan *blockparser.Transaction
-	walletSubs      <-chan walletservice.WalletSub
-	unfilterWallet  chan<- sumuslib.PublicKey
-	dao             db.DAO
-	subs            map[sumuslib.PublicKey]submap
-	subsLock        sync.Mutex
-	mtxTaskDuration *prometheus.SummaryVec
+	logger         *logrus.Entry
+	transactions   <-chan *blockparser.Transaction
+	walletSubs     <-chan model.WalletSub
+	unfilterWallet chan<- sumuslib.PublicKey
+	dao            db.DAO
+	subs           map[sumuslib.PublicKey]submap
+	subsLock       sync.Mutex
 }
 
 type submap map[string]struct{}
@@ -28,20 +26,18 @@ type submap map[string]struct{}
 // New Saver instance
 func New(
 	transactions <-chan *blockparser.Transaction,
-	walletSubs <-chan walletservice.WalletSub,
+	walletSubs <-chan model.WalletSub,
 	unfilterWallet chan<- sumuslib.PublicKey,
 	dao db.DAO,
-	mtxTaskDuration *prometheus.SummaryVec,
 	logger *logrus.Entry,
 ) (*Saver, error) {
 	f := &Saver{
-		logger:          logger,
-		transactions:    transactions,
-		walletSubs:      walletSubs,
-		dao:             dao,
-		subs:            make(map[sumuslib.PublicKey]submap),
-		unfilterWallet:  unfilterWallet,
-		mtxTaskDuration: mtxTaskDuration,
+		logger:         logger,
+		transactions:   transactions,
+		walletSubs:     walletSubs,
+		dao:            dao,
+		subs:           make(map[sumuslib.PublicKey]submap),
+		unfilterWallet: unfilterWallet,
 	}
 	return f, nil
 }

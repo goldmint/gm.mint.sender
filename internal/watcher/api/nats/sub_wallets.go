@@ -1,6 +1,7 @@
 package nats
 
 import (
+	"regexp"
 	"time"
 	"unicode/utf8"
 
@@ -10,25 +11,27 @@ import (
 	sumuslib "github.com/void616/gm-sumuslib"
 )
 
-// addRemoveWallet processes Nats request to add/remove a wallet
-func (s *Service) addRemoveWallet(m *gonats.Msg) {
-	nc := s.natsConnection
+var serviceNameRex = regexp.MustCompile("^[a-zA-Z0-9-_]+$")
+
+// subAddRemoveWallet processes Nats request to add/remove a wallet
+func (n *Nats) subAddRemoveWallet(m *gonats.Msg) {
+	nc := n.natsConnection
 
 	// metrics
-	if s.mtxRequestDuration != nil {
-		defer func(t time.Time, method string) {
-			s.mtxRequestDuration.WithLabelValues(method).Observe(time.Since(t).Seconds())
-		}(time.Now(), m.Subject)
+	if n.metrics != nil {
+		defer func(t time.Time) {
+			n.metrics.RequestDuration.WithLabelValues("add_wallet").Observe(time.Since(t).Seconds())
+		}(time.Now())
 	}
 
 	// parse
 	req := walletNats.AddRemoveRequest{}
 	if err := proto.Unmarshal(m.Data, &req); err != nil {
-		s.logger.WithError(err).Error("Failed to unmarshal request")
+		n.logger.WithError(err).Error("Failed to unmarshal request")
 		return
 	}
 
-	s.logger.WithField("data", req.String()).Trace("Got wallet request")
+	n.logger.WithField("data", req.String()).Debug("Got wallet request")
 
 	// reply
 	var replyError string
@@ -38,10 +41,10 @@ func (s *Service) addRemoveWallet(m *gonats.Msg) {
 			Error:   replyError,
 		}
 		if b, err := proto.Marshal(&rep); err != nil {
-			s.logger.WithError(err).Error("Failed to marshal reply")
+			n.logger.WithError(err).Error("Failed to marshal reply")
 		} else {
 			if err := nc.Publish(m.Reply, b); err != nil {
-				s.logger.WithError(err).Error("Failed to publish reply")
+				n.logger.WithError(err).Error("Failed to publish reply")
 			}
 		}
 	}()
@@ -63,12 +66,12 @@ func (s *Service) addRemoveWallet(m *gonats.Msg) {
 		pubs = append(pubs, pub)
 	}
 	if req.GetAdd() {
-		if !s.walletService.AddWallet(req.GetService(), pubs...) {
+		if !n.api.AddWallet(req.GetService(), pubs...) {
 			replyError = "Internal failure"
 			return
 		}
 	} else {
-		if !s.walletService.RemoveWallet(req.GetService(), pubs...) {
+		if !n.api.RemoveWallet(req.GetService(), pubs...) {
 			replyError = "Internal failure"
 			return
 		}

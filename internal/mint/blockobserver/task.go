@@ -76,15 +76,6 @@ func (o *Observer) Task(token *gotask.Token) {
 						o.logger.WithField("block", latest.String()).Info("New block event")
 						lastBlockTime = time.Now().Unix()
 
-						// metrics
-						if o.mtxQueueGauge != nil {
-							if from.Cmp(latest) < 0 {
-								o.mtxQueueGauge.WithLabelValues("blockobserver").Set(
-									float64(new(big.Int).Sub(latest, from).Uint64()),
-								)
-							}
-						}
-
 						for !token.Stopped() && from.Cmp(latest) < 0 {
 							cur := new(big.Int).Set(from)
 							cur.Add(cur, big.NewInt(1))
@@ -97,11 +88,6 @@ func (o *Observer) Task(token *gotask.Token) {
 							o.logger.WithField("block", cur.String()).Info("Block completed")
 
 							from.Set(cur)
-						}
-
-						// metrics
-						if o.mtxQueueGauge != nil {
-							o.mtxQueueGauge.WithLabelValues("blockobserver").Set(0)
 						}
 					}
 				}

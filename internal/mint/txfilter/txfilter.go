@@ -6,7 +6,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/sirupsen/logrus"
-	"github.com/void616/gm-mint-sender/internal/blockparser"
+	"github.com/void616/gm-mint-sender/internal/mint/blockparser"
 	sumuslib "github.com/void616/gm-sumuslib"
 )
 
@@ -22,11 +22,7 @@ type Filter struct {
 	roiLock    sync.Mutex
 	roiWallets map[sumuslib.PublicKey]struct{}
 	txFilter   TxFilter
-
-	mtxROIWalletsGauge prometheus.Gauge
-	mtxTxVolumeCounter *prometheus.CounterVec
-	mtxTaskDuration    *prometheus.SummaryVec
-	mtxQueueGauge      *prometheus.GaugeVec
+	metrics    *Metrics
 }
 
 // TxFilter filters transaction
@@ -42,34 +38,36 @@ func New(
 	add <-chan sumuslib.PublicKey,
 	remove <-chan sumuslib.PublicKey,
 	txFilter TxFilter,
-	mtxROIWalletsGauge prometheus.Gauge,
-	mtxTxVolumeCounter *prometheus.CounterVec,
-	mtxTaskDuration *prometheus.SummaryVec,
-	mtxQueueGauge *prometheus.GaugeVec,
 	logger *logrus.Entry,
 ) (*Filter, error) {
 	f := &Filter{
-		logger:             logger,
-		in:                 in,
-		out:                out,
-		add:                add,
-		remove:             remove,
-		roiWallets:         make(map[sumuslib.PublicKey]struct{}),
-		txFilter:           txFilter,
-		mtxROIWalletsGauge: mtxROIWalletsGauge,
-		mtxTxVolumeCounter: mtxTxVolumeCounter,
-		mtxTaskDuration:    mtxTaskDuration,
-		mtxQueueGauge:      mtxQueueGauge,
+		logger:     logger,
+		in:         in,
+		out:        out,
+		add:        add,
+		remove:     remove,
+		roiWallets: make(map[sumuslib.PublicKey]struct{}),
+		txFilter:   txFilter,
 	}
 	return f, nil
 }
 
-// AddWallet adds a wallet to the ROI.
-// Should be used to add all known wallets before filter is started
+// AddWallet adds a wallet to the ROI and should be called before service launch
 func (f *Filter) AddWallet(pubkey ...sumuslib.PublicKey) {
 	f.roiLock.Lock()
 	defer f.roiLock.Unlock()
 	for _, p := range pubkey {
 		f.addWallet(p)
 	}
+}
+
+// Metrics data
+type Metrics struct {
+	ROIWallets prometheus.Gauge
+	TxVolume   *prometheus.CounterVec
+}
+
+// AddMetrics adds metrics counters and should be called before service launch
+func (f *Filter) AddMetrics(m *Metrics) {
+	f.metrics = m
 }

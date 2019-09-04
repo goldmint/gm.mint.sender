@@ -81,8 +81,8 @@ func (s *Signer) Task(token *gotask.Token) {
 		}
 
 		// metrics
-		if s.mtxQueueGauge != nil {
-			s.mtxQueueGauge.WithLabelValues("txsigner_shot").Set(float64(count))
+		if s.metrics != nil {
+			s.metrics.Queue.Set(float64(count))
 		}
 
 		// process queue
@@ -93,24 +93,14 @@ func (s *Signer) Task(token *gotask.Token) {
 			default:
 				out = true
 			case snd := <-requests:
-
-				// metrics
-				t := time.Now()
-
 				if s.processRequest(snd, currentBlock) {
 					processed++
-				}
-
-				// metrics
-				if s.mtxTaskDuration != nil {
-					s.mtxTaskDuration.WithLabelValues("txsigner_shot").Observe(time.Since(t).Seconds())
 				}
 			}
 		}
 
-		// metrics
-		if s.mtxQueueGauge != nil {
-			s.mtxQueueGauge.WithLabelValues("txsigner_shot").Set(0)
+		if s.metrics != nil {
+			s.metrics.Queue.Set(0)
 		}
 
 		if processed == 0 {

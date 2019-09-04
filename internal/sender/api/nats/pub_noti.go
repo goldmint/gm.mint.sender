@@ -10,8 +10,8 @@ import (
 	"github.com/void616/gm-sumuslib/amount"
 )
 
-// PublishSentEvent sends a "sent" event
-func (s *Service) PublishSentEvent(
+// PublishSentEvent sends a sending completion notification
+func (n *Nats) PublishSentEvent(
 	success bool,
 	msgerr string,
 	service, requestID string,
@@ -21,7 +21,11 @@ func (s *Service) PublishSentEvent(
 	digest *sumuslib.Digest,
 ) error {
 	// metrics
-	mt := time.Now()
+	if n.metrics != nil {
+		defer func(t time.Time) {
+			n.metrics.NotificationDuration.Observe(time.Since(t).Seconds())
+		}(time.Now())
+	}
 
 	transaction := ""
 	if digest != nil {
@@ -44,7 +48,7 @@ func (s *Service) PublishSentEvent(
 		return err
 	}
 
-	msg, err := s.natsConnection.Request(s.subjPrefix+senderNatsProto.SubjectSent, req, time.Second*5)
+	msg, err := n.natsConnection.Request(n.subjPrefix+senderNatsProto.SubjectSent, req, time.Second*10)
 	if err != nil {
 		return err
 	}
@@ -56,11 +60,6 @@ func (s *Service) PublishSentEvent(
 
 	if !repModel.GetSuccess() {
 		return fmt.Errorf("service rejecttion: %v", repModel.GetError())
-	}
-
-	// metrics
-	if s.mtxTaskDuration != nil {
-		s.mtxTaskDuration.WithLabelValues("nats_notifier").Observe(time.Since(mt).Seconds())
 	}
 
 	return nil

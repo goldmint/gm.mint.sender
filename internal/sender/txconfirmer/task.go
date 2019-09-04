@@ -24,8 +24,6 @@ func (c *Confirmer) Task(token *gotask.Token) {
 					// save to death
 					saved := false
 					for !token.Stopped() && !saved {
-						// metrics
-						t := time.Now()
 
 						if err := c.dao.SetSendingConfirmed(tx.Digest, tx.From, tx.Block); err != nil {
 							c.logger.WithError(err).WithField("digest", tx.Digest.String()).Errorf("Failed to confirm transaction")
@@ -33,11 +31,6 @@ func (c *Confirmer) Task(token *gotask.Token) {
 						} else {
 							saved = true
 							confirmedItems++
-						}
-
-						// metrics
-						if c.mtxTaskDuration != nil {
-							c.mtxTaskDuration.WithLabelValues("txconfirmer").Observe(time.Since(t).Seconds())
 						}
 					}
 				}
