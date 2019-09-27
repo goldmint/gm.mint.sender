@@ -12,6 +12,7 @@ type DAO interface {
 	Available() bool
 	DuplicateError(err error) bool
 	MaxPacketError(err error) bool
+	Migrate() error
 
 	// PutWallet saves sending wallet to track it's outgoing transactions later
 	PutWallet(v *types.Wallet) error

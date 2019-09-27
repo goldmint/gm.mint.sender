@@ -9,14 +9,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/void616/gm-sumuslib/amount"
-
 	"github.com/fatih/color"
 	"github.com/golang/protobuf/proto"
 	gonats "github.com/nats-io/go-nats"
 	senderNats "github.com/void616/gm-mint-sender/pkg/sender/nats/sender"
 	watcherNats "github.com/void616/gm-mint-sender/pkg/watcher/nats/wallet"
 	sumuslib "github.com/void616/gm-sumuslib"
+	"github.com/void616/gm-sumuslib/amount"
 )
 
 var (

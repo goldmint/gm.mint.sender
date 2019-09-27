@@ -9,9 +9,13 @@ type DAO interface {
 	Available() bool
 	DuplicateError(err error) bool
 	MaxPacketError(err error) bool
+	Migrate() error
 
 	PutSetting(k, v string) error
 	GetSetting(k, def string) (string, error)
+
+	PutService(v *types.Service) error
+	GetService(name string) (*types.Service, error)
 
 	PutWallet(v ...*types.Wallet) error
 	ListWallets() ([]*types.WalletServices, error)

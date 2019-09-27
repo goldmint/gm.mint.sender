@@ -47,13 +47,13 @@ func New(
 		return nil, err
 	}
 
-	o := &Ranger{
+	r := &Ranger{
 		logger: logger,
 		from:   from,
 		to:     to,
 		parser: parser,
 	}
-	return o, nil
+	return r, nil
 }
 
 // AddMetrics adds metrics counters and should be called before service launch

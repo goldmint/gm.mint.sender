@@ -11,7 +11,7 @@ import (
 // Incoming model
 type Incoming struct {
 	ID            uint64
-	Service       string
+	Service       Service
 	To            sumuslib.PublicKey
 	From          sumuslib.PublicKey
 	Amount        *amount.Amount

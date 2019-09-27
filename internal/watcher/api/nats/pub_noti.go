@@ -10,7 +10,7 @@ import (
 	"github.com/void616/gm-sumuslib/amount"
 )
 
-// NotifyRefilling sends event
+// NotifyRefilling sends an event
 func (n *Nats) NotifyRefilling(service string, to, from sumuslib.PublicKey, t sumuslib.Token, a *amount.Amount, tx sumuslib.Digest) error {
 
 	// metrics

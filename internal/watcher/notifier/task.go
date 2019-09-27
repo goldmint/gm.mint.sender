@@ -3,6 +3,7 @@ package notifier
 import (
 	"time"
 
+	"github.com/void616/gm-mint-sender/internal/watcher/db/types"
 	"github.com/void616/gotask"
 )
 
@@ -52,12 +53,34 @@ func (n *Notifier) Task(token *gotask.Token) {
 			}
 
 			// notify
-			err := n.transporter.NotifyRefilling(inc.Service, inc.To, inc.From, inc.Token, inc.Amount, inc.Digest)
-			if err != nil {
+			var notiErr error
+			switch inc.Service.Transport {
+			case types.ServiceNats:
+				if n.natsTrans != nil {
+					notiErr = n.natsTrans.NotifyRefilling(inc.Service.Name, inc.To, inc.From, inc.Token, inc.Amount, inc.Digest)
+				} else {
+					n.logger.Warn("Nats transport is disabled, skipping notification")
+					continue
+				}
+			case types.ServiceHTTP:
+				if n.httpTrans != nil {
+					if inc.Service.CallbackURL != "" {
+						notiErr = n.httpTrans.NotifyRefilling(inc.Service.CallbackURL, inc.Service.Name, inc.To, inc.From, inc.Token, inc.Amount, inc.Digest)
+					}
+				} else {
+					n.logger.Warn("HTTP transport is disabled, skipping notification")
+					continue
+				}
+			default:
+				n.logger.Errorf("Transport %v is not implemented", inc.Service.Transport)
+				continue
+			}
+
+			if notiErr != nil {
 				n.logger.
 					WithField("wallet", inc.To.String()).
 					WithField("tx", inc.Digest.String()).
-					WithError(err).
+					WithError(notiErr).
 					Error("Failed to notify")
 
 				// notify next time

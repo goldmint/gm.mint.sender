@@ -23,7 +23,7 @@ type Nats struct {
 
 // API provides ability to interact with service API
 type API interface {
-	EnqueueSending(id, service string, to sumuslib.PublicKey, a *amount.Amount, t sumuslib.Token) (dup, success bool)
+	EnqueueSendingNats(id, service string, to sumuslib.PublicKey, a *amount.Amount, t sumuslib.Token) (dup, success bool)
 }
 
 // New instance
@@ -48,7 +48,7 @@ func New(
 	natsConnection.SetDisconnectHandler(func(_ *gonats.Conn) {
 		logger.Warnf("Nats disconnected: %v", url)
 	})
-	logger.Infof("Nats connected: %v", url)
+	logger.Infof("Nats transport enabled: %v", url)
 
 	n := &Nats{
 		logger:         logger,

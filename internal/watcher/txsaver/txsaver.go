@@ -7,6 +7,7 @@ import (
 	"github.com/void616/gm-mint-sender/internal/mint/blockparser"
 	"github.com/void616/gm-mint-sender/internal/watcher/api/model"
 	"github.com/void616/gm-mint-sender/internal/watcher/db"
+	"github.com/void616/gm-mint-sender/internal/watcher/db/types"
 	sumuslib "github.com/void616/gm-sumuslib"
 )
 
@@ -17,11 +18,11 @@ type Saver struct {
 	walletSubs     <-chan model.WalletSub
 	unfilterWallet chan<- sumuslib.PublicKey
 	dao            db.DAO
-	subs           map[sumuslib.PublicKey]submap
+	subs           map[sumuslib.PublicKey]servicesMap
 	subsLock       sync.Mutex
 }
 
-type submap map[string]struct{}
+type servicesMap map[string]types.Service
 
 // New Saver instance
 func New(
@@ -36,22 +37,20 @@ func New(
 		transactions:   transactions,
 		walletSubs:     walletSubs,
 		dao:            dao,
-		subs:           make(map[sumuslib.PublicKey]submap),
+		subs:           make(map[sumuslib.PublicKey]servicesMap),
 		unfilterWallet: unfilterWallet,
 	}
 	return f, nil
 }
 
 // AddWalletSubs adds subscribers of the specific wallet
-func (s *Saver) AddWalletSubs(p sumuslib.PublicKey, service ...string) {
+func (s *Saver) AddWalletSubs(p sumuslib.PublicKey, services ...types.Service) {
 	s.subsLock.Lock()
 	defer s.subsLock.Unlock()
-	for _, svc := range service {
-		if svc != "" {
-			if _, ok := s.subs[p]; !ok {
-				s.subs[p] = submap{}
-			}
-			s.subs[p][svc] = struct{}{}
+	for _, svc := range services {
+		if _, ok := s.subs[p]; !ok {
+			s.subs[p] = servicesMap{}
 		}
+		s.subs[p][svc.Name] = svc
 	}
 }

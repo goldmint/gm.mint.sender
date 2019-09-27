@@ -1,17 +1,16 @@
 package nats
 
 import (
-	"regexp"
 	"time"
 	"unicode/utf8"
 
 	proto "github.com/golang/protobuf/proto"
 	gonats "github.com/nats-io/go-nats"
+	"github.com/void616/gm-mint-sender/internal/watcher/api/model"
+	"github.com/void616/gm-mint-sender/internal/watcher/db/types"
 	walletNats "github.com/void616/gm-mint-sender/pkg/watcher/nats/wallet"
 	sumuslib "github.com/void616/gm-sumuslib"
 )
-
-var serviceNameRex = regexp.MustCompile("^[a-zA-Z0-9-_]+$")
 
 // subAddRemoveWallet processes Nats request to add/remove a wallet
 func (n *Nats) subAddRemoveWallet(m *gonats.Msg) {
@@ -31,7 +30,7 @@ func (n *Nats) subAddRemoveWallet(m *gonats.Msg) {
 		return
 	}
 
-	n.logger.WithField("data", req.String()).Debug("Got wallet request")
+	n.logger.WithField("data", len(req.GetPublicKey())).Debug("Got wallet request")
 
 	// reply
 	var replyError string
@@ -50,7 +49,7 @@ func (n *Nats) subAddRemoveWallet(m *gonats.Msg) {
 	}()
 
 	// check req service
-	if x := utf8.RuneCountInString(req.GetService()); x < 1 || x > 64 || !serviceNameRex.MatchString(req.GetService()) {
+	if x := utf8.RuneCountInString(req.GetService()); x < 1 || x > 64 || !model.ServiceNameRex.MatchString(req.GetService()) {
 		replyError = "Invalid service name"
 		return
 	}
@@ -66,7 +65,7 @@ func (n *Nats) subAddRemoveWallet(m *gonats.Msg) {
 		pubs = append(pubs, pub)
 	}
 	if req.GetAdd() {
-		if !n.api.AddWallet(req.GetService(), pubs...) {
+		if !n.api.AddWallet(req.GetService(), types.ServiceNats, "", pubs...) {
 			replyError = "Internal failure"
 			return
 		}

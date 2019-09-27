@@ -14,6 +14,7 @@ import (
 type Sending struct {
 	Base
 	ID            uint64     `gorm:"PRIMARY_KEY;AUTO_INCREMENT:true;NOT NULL"`
+	Transport     uint8      `gorm:"NOT NULL"`
 	Service       string     `gorm:"SIZE:64;NOT NULL"`
 	Status        uint8      `gorm:"NOT NULL"`
 	To            []byte     `gorm:"SIZE:32;NOT NULL"`
@@ -25,6 +26,7 @@ type Sending struct {
 	SentAtBlock   []byte     `gorm:"SIZE:32"`
 	Block         []byte     `gorm:"SIZE:32"`
 	RequestID     string     `gorm:"SIZE:64;NOT NULL"`
+	CallbackURL   string     `gorm:"SIZE:256;NOT NULL"`
 	FirstNotifyAt *time.Time `gorm:""`
 	NotifyAt      *time.Time `gorm:""`
 	Notified      bool       `gorm:"NOT NULL"`
@@ -33,6 +35,7 @@ type Sending struct {
 // MapFrom mapping
 func (s *Sending) MapFrom(t *types.Sending) error {
 	s.ID = t.ID
+	s.Transport = uint8(t.Transport)
 	s.Status = uint8(t.Status)
 	s.To = t.To.Bytes()
 	s.Amount = t.Amount.String()
@@ -65,6 +68,7 @@ func (s *Sending) MapFrom(t *types.Sending) error {
 	}
 	s.Service = LimitStringField(t.Service, 64)
 	s.RequestID = LimitStringField(t.RequestID, 64)
+	s.CallbackURL = LimitStringField(t.CallbackURL, 256)
 	s.FirstNotifyAt = t.FirstNotifyAt
 	s.NotifyAt = t.NotifyAt
 	s.Notified = t.Notified
@@ -114,6 +118,7 @@ func (s *Sending) MapTo() (*types.Sending, error) {
 
 	return &types.Sending{
 		ID:            s.ID,
+		Transport:     types.SendingTransport(s.Transport),
 		Status:        types.SendingStatus(s.Status),
 		To:            to,
 		Amount:        amo,
@@ -125,6 +130,7 @@ func (s *Sending) MapTo() (*types.Sending, error) {
 		Block:         block,
 		Service:       s.Service,
 		RequestID:     s.RequestID,
+		CallbackURL:   s.CallbackURL,
 		FirstNotifyAt: s.FirstNotifyAt,
 		NotifyAt:      s.NotifyAt,
 		Notified:      s.Notified,

@@ -62,7 +62,7 @@ func (s *Saver) Task(token *gotask.Token) {
 				models := make([]*types.Incoming, len(s.subs[*tx.To]))
 				{
 					i := 0
-					for svc := range s.subs[*tx.To] {
+					for _, svc := range s.subs[*tx.To] {
 						models[i] = &types.Incoming{
 							Service:   svc,
 							To:        *tx.To,
@@ -94,23 +94,23 @@ func (s *Saver) Task(token *gotask.Token) {
 				// add
 				if pair.Add {
 					if _, ok := s.subs[pair.PublicKey]; !ok {
-						s.subs[pair.PublicKey] = submap{}
+						s.subs[pair.PublicKey] = servicesMap{}
 					}
-					if _, ok := s.subs[pair.PublicKey][pair.Service]; !ok {
-						s.subs[pair.PublicKey][pair.Service] = struct{}{}
-						s.logger.Debugf("Pair %v:%v added to ROI", pair.PublicKey.StringMask(), pair.Service)
+					if _, ok := s.subs[pair.PublicKey][pair.Service.Name]; !ok {
+						s.subs[pair.PublicKey][pair.Service.Name] = pair.Service
+						s.logger.Debugf("Pair %v:%v added to ROI", pair.PublicKey.StringMask(), pair.Service.Name)
 					}
 					break
 				}
 				// remove
 				if _, ok := s.subs[pair.PublicKey]; ok {
-					if _, ok1 := s.subs[pair.PublicKey][pair.Service]; ok1 {
-						delete(s.subs[pair.PublicKey], pair.Service)
+					if _, ok1 := s.subs[pair.PublicKey][pair.Service.Name]; ok1 {
+						delete(s.subs[pair.PublicKey], pair.Service.Name)
 						// no more services => don't filter tx-s at all for this address
 						if len(s.subs[pair.PublicKey]) == 0 {
 							s.unfilterWallet <- pair.PublicKey
 						}
-						s.logger.Debugf("Pair %v:%v removed from ROI", pair.PublicKey.StringMask(), pair.Service)
+						s.logger.Debugf("Pair %v:%v removed from ROI", pair.PublicKey.StringMask(), pair.Service.Name)
 					}
 				}
 

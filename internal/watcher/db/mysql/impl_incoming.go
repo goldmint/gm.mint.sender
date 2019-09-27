@@ -50,6 +50,7 @@ func (d *Database) ListUnnotifiedIncomings(max uint16) ([]*types.Incoming, error
 
 	res := d.
 		Model(&model.Incoming{}).
+		Preload("Service").
 		Where(
 			"`notified`=0 AND (`notify_at` IS NULL OR `notify_at`<=?)",
 			time.Now().UTC(),

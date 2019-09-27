@@ -6,12 +6,11 @@ import (
 	gormigrate "gopkg.in/gormigrate.v1"
 )
 
-// Migrations array
-var Migrations = []*gormigrate.Migration{
+var migrations = []*gormigrate.Migration{
 
 	// initial
 	&gormigrate.Migration{
-		ID: "2019-08-29T16:17:09.449Z",
+		ID: "2019-09-26T13:20:00.350Z",
 		Migrate: func(tx *gorm.DB) error {
 			return tx.
 				CreateTable(&model.Wallet{}).

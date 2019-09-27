@@ -6,6 +6,7 @@ require (
 	github.com/fatih/color v1.7.0
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/golang/protobuf v1.3.2
+	github.com/gorilla/mux v1.7.3
 	github.com/jinzhu/gorm v1.9.2
 	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/mattn/go-isatty v0.0.9 // indirect
@@ -23,4 +24,5 @@ require (
 	github.com/void616/gotask v1.0.2
 	golang.org/x/crypto v0.0.0-20190404164418-38d8ce5564a5 // indirect
 	gopkg.in/gormigrate.v1 v1.4.0
+	gopkg.in/yaml.v2 v2.2.1
 )

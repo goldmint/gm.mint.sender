@@ -10,16 +10,41 @@ Incoming transactions are saved into storage. Upon saving, the service tries to 
 
 ## Usage
 
+Prepare `config.yaml`:
+```yaml
+# Log
+log:
+  level: info
+  color: yes
+  json: no
+# API (one of)
+api:
+  # Nats interface (optional)
+  nats:
+    url: localhost:4222
+    prefix: ""
+  # HTTP interface (optional)
+  http:
+    port: 9000
+# Database
+db:
+  driver: mysql
+  dsn: user:password@tcp(localhost:3306)/mint_sender?collation=utf8_general_ci&timeout=10s&readTimeout=60s&writeTimeout=60s
+  prefix: watcher
+# Prometheus metrics (optional)
+metrics: 2113
+# Mint nodes
+nodes:
+  - 127.0.0.1:4010
+```
+
 Run the service:
 ```sh
-./watcher \
-  --node localhost:4010 \ # Mint node RPC
-  --nats localhost:4222 \ # Nats
-  --table mywatcher \ # DB table prefix
-  --dsn "user:password@tcp(localhost:3306)/mint_sender?collation=utf8_general_ci&timeout=10s&readTimeout=60s&writeTimeout=60s"
+./watcher
 ```
 
 [Nats messages](pkg/watcher/nats/wallet/README.md)
+[HTTP messages](pkg/watcher/http/README.md)
 
 
 
@@ -31,28 +56,45 @@ Upon succesful sending, the service tries to notify it's consumers.
 
 ## Usage
 
-Create a file containing private keys of sending wallets (keys.json):
-```json
-{
-	"keys": [
-		"PRIVATE KEY 1",
-		"PRIVATE KEY 2",
-		"PRIVATE KEY N"
-	]
-}
+Prepare `config.yaml`:
+```yaml
+# Log
+log:
+  level: debug
+  color: yes
+  json: no
+# API (one of)
+api:
+  # Nats interface (optional)
+  nats:
+    url: localhost:4222
+    prefix: ""
+  # HTTP interface (optional)
+  http:
+    port: 9001
+# Database
+db:
+  driver: mysql
+  dsn: user:password@tcp(localhost:3306)/mint_sender?collation=utf8_general_ci&timeout=10s&readTimeout=60s&writeTimeout=60s
+  prefix: sender
+# Prometheus metrics (optional)
+metrics: 2114
+# Mint nodes
+nodes:
+  - 127.0.0.1:4010
+# Sending wallets private keys
+wallets:
+  - PRIVATE_KEY
+  - PRIVATE_KEY
 ```
 
 Run the service:
 ```sh
-./sender \
-  --keys keys.json \ # Private keys
-  --node localhost:4010 \ # Mint node RPC
-  --nats localhost:4222 \ # Nats
-  --table snd \ # DB table prefix
-  --dsn "user:password@tcp(localhost:3306)/mint_sender?collation=utf8_general_ci&timeout=10s&readTimeout=60s&writeTimeout=60s"
+./sender
 ```
 
 [Nats messages](pkg/sender/nats/sender/README.md)
+[HTTP messages](pkg/sender/http/README.md)
 
 
 
@@ -67,7 +109,7 @@ Run the service:
 | build    | Building artifacts, Docker files |
 | cmd      | Apps' entrypoint |
 | internal | Apps' internals |
-| pkg      | Nats messages, Protobuf schemes |
+| pkg      | Nats/HTTP messages, Protobuf schemes |
 | scripts  | Building scripts |
 | vendor   | Go vendoring |
 
@@ -76,7 +118,8 @@ Run the service:
 ## Transport
 
 Services' primary transport is Nats server. Messages are serialized with Protobuf. \
-Nats scheme: `.proto` file contains message scheme, `.go` file contains Nats subject names.
+Nats scheme: `.proto` file contains message scheme, `.go` file contains Nats subject names. \
+Simple HTTP API now is supported as well.
 
 
 
@@ -122,4 +165,5 @@ make test
 ## TODO
 
 - [x] Instrumenting (Prometheus)
-- [ ] HTTP API
+- [x] HTTP API
+- [ ] More DB drivers 

@@ -13,6 +13,7 @@ import (
 // Database data
 type Database struct {
 	*gorm.DB
+	tablePrefix string
 }
 
 // New instance
@@ -37,6 +38,7 @@ func New(connection, tablePrefix string, multiStatements bool, maxPacket uint32)
 	}
 
 	return &Database{
-		DB: db,
+		DB:          db,
+		tablePrefix: tablePrefix,
 	}, nil
 }

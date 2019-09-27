@@ -6,6 +6,6 @@ import (
 
 // WalletServices model
 type WalletServices struct {
-	Services  []string
 	PublicKey sumuslib.PublicKey
+	Services  []Service
 }

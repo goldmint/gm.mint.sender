@@ -1,9 +1,10 @@
 package nats
 
 import (
-	"regexp"
 	"time"
 	"unicode/utf8"
+
+	"github.com/void616/gm-mint-sender/internal/sender/api/model"
 
 	proto "github.com/golang/protobuf/proto"
 	gonats "github.com/nats-io/go-nats"
@@ -11,8 +12,6 @@ import (
 	sumuslib "github.com/void616/gm-sumuslib"
 	"github.com/void616/gm-sumuslib/amount"
 )
-
-var serviceNameRex = regexp.MustCompile("^[a-zA-Z0-9-_]+$")
 
 // subSendRequest listens for a new sending requests until connection draining
 func (n *Nats) subSendRequest(m *gonats.Msg) {
@@ -51,7 +50,7 @@ func (n *Nats) subSendRequest(m *gonats.Msg) {
 	}()
 
 	// check req service
-	if x := utf8.RuneCountInString(req.GetService()); x < 1 || x > 64 || !serviceNameRex.MatchString(req.GetService()) {
+	if x := utf8.RuneCountInString(req.GetService()); x < 1 || x > 64 || !model.ServiceNameRex.MatchString(req.GetService()) {
 		replyError = "Invalid service name"
 		return
 	}
@@ -84,7 +83,7 @@ func (n *Nats) subSendRequest(m *gonats.Msg) {
 	}
 
 	// enqueue
-	if dups, ok := n.api.EnqueueSending(req.GetId(), req.GetService(), reqAddr, reqAmount, reqToken); !ok {
+	if dups, ok := n.api.EnqueueSendingNats(req.GetId(), req.GetService(), reqAddr, reqAmount, reqToken); !ok {
 		if dups {
 			replyError = "Request with the same ID registered"
 		} else {

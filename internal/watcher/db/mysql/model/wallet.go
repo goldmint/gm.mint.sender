@@ -10,25 +10,35 @@ import (
 // Wallet model
 type Wallet struct {
 	Base
-	PublicKey []byte `gorm:"SIZE:32;NOT NULL"`
-	Service   string `gorm:"SIZE:64;NOT NULL"`
+	PublicKey []byte  `gorm:"SIZE:32;NOT NULL"`
+	ServiceID uint64  `gorm:"NOT NULL"`
+	Service   Service
 }
 
 // MapFrom mapping
 func (w *Wallet) MapFrom(t *types.Wallet) error {
+	svc := Service{}
+	if err := (&svc).MapFrom(&t.Service); err != nil {
+		return err
+	}
+
 	w.PublicKey = t.PublicKey.Bytes()
-	w.Service = LimitStringField(t.Service, 64)
+	w.Service = svc
 	return nil
 }
 
 // MapTo mapping
 func (w *Wallet) MapTo() (*types.Wallet, error) {
+	svc, err := (&w.Service).MapTo()
+	if err != nil {
+		return nil, err
+	}
 	pub, err := sumuslib.BytesToPublicKey(w.PublicKey)
 	if err != nil {
 		return nil, fmt.Errorf("invalid public key")
 	}
 	return &types.Wallet{
 		PublicKey: pub,
-		Service:   w.Service,
+		Service:   *svc,
 	}, nil
 }

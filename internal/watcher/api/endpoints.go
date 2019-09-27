@@ -7,12 +7,32 @@ import (
 )
 
 // AddWallet adds wallet to the DB and sends it to the transaction filter
-func (api *API) AddWallet(service string, pub ...sumuslib.PublicKey) bool {
+func (api *API) AddWallet(svc string, trans types.ServiceTransport, svcURL string, pub ...sumuslib.PublicKey) bool {
+
+	if err := api.dao.PutService(&types.Service{
+		Name:        svc,
+		Transport:   trans,
+		CallbackURL: svcURL,
+	}); err != nil {
+		api.logger.WithError(err).Error("Failed to add service")
+		return false
+	}
+
+	service, err := api.dao.GetService(svc)
+	if err != nil {
+		api.logger.WithError(err).Error("Failed to get service")
+		return false
+	}
+	if service == nil {
+		api.logger.WithError(err).Error("Failed to find service")
+		return false
+	}
+
 	list := make([]*types.Wallet, len(pub))
 	for i, v := range pub {
 		list[i] = &types.Wallet{
 			PublicKey: v,
-			Service:   service,
+			Service:   *service,
 		}
 	}
 
@@ -23,7 +43,7 @@ func (api *API) AddWallet(service string, pub ...sumuslib.PublicKey) bool {
 	for _, p := range pub {
 		api.walletSubs <- model.WalletSub{
 			PublicKey: p,
-			Service:   service,
+			Service:   *service,
 			Add:       true,
 		}
 		api.watchWallet <- p
@@ -32,12 +52,23 @@ func (api *API) AddWallet(service string, pub ...sumuslib.PublicKey) bool {
 }
 
 // RemoveWallet removes wallet from the DB and from the transaction filter
-func (api *API) RemoveWallet(service string, pub ...sumuslib.PublicKey) bool {
+func (api *API) RemoveWallet(svc string, pub ...sumuslib.PublicKey) bool {
+
+	service, err := api.dao.GetService(svc)
+	if err != nil {
+		api.logger.WithError(err).Error("Failed to get service")
+		return false
+	}
+	if service == nil {
+		api.logger.WithError(err).Error("Failed to find service")
+		return false
+	}
+
 	list := make([]*types.Wallet, len(pub))
 	for i, v := range pub {
 		list[i] = &types.Wallet{
 			PublicKey: v,
-			Service:   service,
+			Service:   *service,
 		}
 	}
 
@@ -48,7 +79,7 @@ func (api *API) RemoveWallet(service string, pub ...sumuslib.PublicKey) bool {
 	for _, p := range pub {
 		api.walletSubs <- model.WalletSub{
 			PublicKey: p,
-			Service:   service,
+			Service:   *service,
 			Add:       false,
 		}
 	}

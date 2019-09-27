@@ -13,8 +13,9 @@ import (
 // Incoming model
 type Incoming struct {
 	Base
-	ID            uint64     `gorm:"PRIMARY_KEY;AUTO_INCREMENT:true;NOT NULL"`
-	Service       string     `gorm:"SIZE:64;NOT NULL"`
+	ID            uint64 `gorm:"PRIMARY_KEY;AUTO_INCREMENT:true;NOT NULL"`
+	ServiceID     uint64 `gorm:"NOT NULL"`
+	Service       Service
 	To            []byte     `gorm:"SIZE:32;NOT NULL"`
 	From          []byte     `gorm:"SIZE:32;NOT NULL"`
 	Amount        string     `gorm:"NOT NULL" sql:"TYPE:decimal(30,18)"`
@@ -29,8 +30,12 @@ type Incoming struct {
 
 // MapFrom mapping
 func (i *Incoming) MapFrom(t *types.Incoming) error {
+	svc := Service{}
+	if err := (&svc).MapFrom(&t.Service); err != nil {
+		return err
+	}
 	i.ID = t.ID
-	i.Service = LimitStringField(t.Service, 64)
+	i.Service = svc
 	i.To = t.To.Bytes()
 	i.From = t.From.Bytes()
 	i.Amount = t.Amount.String()
@@ -46,6 +51,10 @@ func (i *Incoming) MapFrom(t *types.Incoming) error {
 
 // MapTo mapping
 func (i *Incoming) MapTo() (*types.Incoming, error) {
+	svc, err := (&i.Service).MapTo()
+	if err != nil {
+		return nil, err
+	}
 	to, err := sumuslib.BytesToPublicKey(i.To)
 	if err != nil {
 		return nil, fmt.Errorf("invalid to")
@@ -66,7 +75,7 @@ func (i *Incoming) MapTo() (*types.Incoming, error) {
 
 	return &types.Incoming{
 		ID:            i.ID,
-		Service:       i.Service,
+		Service:       *svc,
 		To:            to,
 		From:          from,
 		Amount:        amo,

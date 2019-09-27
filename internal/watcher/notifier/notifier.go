@@ -11,26 +11,34 @@ const itemsPerShot = 50
 
 // Notifier sends refilling notifications
 type Notifier struct {
-	logger      *logrus.Entry
-	transporter Transporter
-	dao         db.DAO
+	logger    *logrus.Entry
+	natsTrans NatsTransporter
+	httpTrans HTTPTransporter
+	dao       db.DAO
 }
 
-// Transporter delivers notifications or fail with an error
-type Transporter interface {
+// NatsTransporter delivers notifications or fail with an error
+type NatsTransporter interface {
 	NotifyRefilling(service string, to, from sumuslib.PublicKey, t sumuslib.Token, a *amount.Amount, tx sumuslib.Digest) error
+}
+
+// HTTPTransporter delivers notifications or fail with an error
+type HTTPTransporter interface {
+	NotifyRefilling(url, service string, to, from sumuslib.PublicKey, t sumuslib.Token, a *amount.Amount, tx sumuslib.Digest) error
 }
 
 // New Notifier instance
 func New(
 	dao db.DAO,
-	trans Transporter,
+	natsTrans NatsTransporter,
+	httpTrans HTTPTransporter,
 	logger *logrus.Entry,
 ) (*Notifier, error) {
 	n := &Notifier{
-		logger:      logger,
-		dao:         dao,
-		transporter: trans,
+		logger:    logger,
+		dao:       dao,
+		natsTrans: natsTrans,
+		httpTrans: httpTrans,
 	}
 	return n, nil
 }

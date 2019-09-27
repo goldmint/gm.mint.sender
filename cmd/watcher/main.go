@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"math/big"
 	"os"
 	"os/signal"
@@ -22,6 +23,7 @@ import (
 	"github.com/void616/gm-mint-sender/internal/mint/txfilter"
 	"github.com/void616/gm-mint-sender/internal/version"
 	serviceAPI "github.com/void616/gm-mint-sender/internal/watcher/api"
+	serviceHTTP "github.com/void616/gm-mint-sender/internal/watcher/api/http"
 	apiModels "github.com/void616/gm-mint-sender/internal/watcher/api/model"
 	serviceNats "github.com/void616/gm-mint-sender/internal/watcher/api/nats"
 	"github.com/void616/gm-mint-sender/internal/watcher/db"
@@ -32,7 +34,7 @@ import (
 	sumuslib "github.com/void616/gm-sumuslib"
 	"github.com/void616/gm-sumusrpc/rpc"
 	"github.com/void616/gotask"
-	gormigrate "gopkg.in/gormigrate.v1"
+	"gopkg.in/yaml.v2"
 )
 
 var (
@@ -43,39 +45,34 @@ var (
 	txFilterTask        *gotask.Task
 	txSaverTask         *gotask.Task
 	natsTransportTask   *gotask.Task
+	httpTransportTask   *gotask.Task
 	notifierTask        *gotask.Task
 	metricsTask         *gotask.Task
 	lastParsedBlockTask *gotask.Task
 )
 
 func main() {
-
-	// flags
-	var (
-		// log
-		logLevel   = flag.String("log", "info", "Log level: fatal|error|warn|info|debug|trace")
-		logJSON    = flag.Bool("json", false, "Log in Json format")
-		logNoColor = flag.Bool("nocolor", false, "Disable colorful log")
-		// nodes
-		sumusNodes      flagArray
-		rangerParseFrom = flag.String("parse-from", "", "Run blocks range parser from the specific block (inclusive) to the current latest block")
-		// db
-		dbDSN         = flag.String("dsn", "", "Database connection string")
-		dbTablePrefix = flag.String("table", "watcher", "Database table prefix")
-		// nats
-		natsURL        = flag.String("nats", "localhost:4222", "Nats server endpoint")
-		natsSubjPrefix = flag.String("nats-subj", "", "Prefix for Nats messages subject")
-		// metrics
-		metricsPort = flag.Uint("metrics", 0, "Prometheus port, i.e. 2112")
-	)
-	flag.Var(&sumusNodes, "node", "Sumus RPC encpoints, i.e. 127.0.0.1:4010")
+	var argConfigFile = flag.String("config", "./config.yaml", "Config Yaml")
+	var argRangerParseFrom = flag.String("parse-from", "", "Run blocks range parser from the specific block (inclusive) to the current latest block")
 	flag.Parse()
+
+	// config file
+	var conf config
+	{
+		b, err := ioutil.ReadFile(*argConfigFile)
+		if err != nil {
+			panic("failed to read config file: " + err.Error())
+		}
+		if err := yaml.Unmarshal(b, &conf); err != nil {
+			panic("failed to parse config file: " + err.Error())
+		}
+	}
 
 	// logging
 	logger = logrus.New()
 	var tasksLogger gotask.Logger
 	{
-		lvl, err := logrus.ParseLevel(*logLevel)
+		lvl, err := logrus.ParseLevel(conf.Log.Level)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to parse logger level")
 		}
@@ -84,14 +81,15 @@ func main() {
 
 		// format
 		switch {
-		case *logJSON:
+		case conf.Log.JSON:
 			logger.Formatter = &logrus.JSONFormatter{
 				TimestampFormat: time.RFC3339,
 			}
 		default:
 			logger.Formatter = &logrus.TextFormatter{
 				FullTimestamp:   true,
-				ForceColors:     !*logNoColor,
+				DisableColors:   !conf.Log.Color,
+				ForceColors:     conf.Log.Color,
 				TimestampFormat: time.RFC3339,
 			}
 		}
@@ -119,46 +117,43 @@ func main() {
 	// database
 	var dao db.DAO
 	{
-		*dbTablePrefix = formatPrefix(*dbTablePrefix, "_")
-		if *dbTablePrefix == "" {
+		conf.DB.Prefix = formatPrefix(conf.DB.Prefix, "_")
+		if conf.DB.Prefix == "" {
 			logger.Fatal("Please specify database table prefix")
 		}
 
-		db, err := mysql.New(*dbDSN, *dbTablePrefix, false, 16*1024*1024)
-		if err != nil {
-			logger.WithError(err).Fatal("Failed to setup DB")
+		switch strings.ToLower(conf.DB.Driver) {
+		case "mysql":
+			db, err := mysql.New(conf.DB.DSN, conf.DB.Prefix, false, 16*1024*1024)
+			if err != nil {
+				logger.WithError(err).Fatal("Failed to setup DB")
+			}
+			defer db.Close()
+			db.DB.DB().SetMaxOpenConns(8)
+			db.DB.DB().SetMaxIdleConns(1)
+			db.DB.DB().SetConnMaxLifetime(time.Second * 30)
+			db.DB.LogMode(logger.Level >= logrus.TraceLevel)
+			dao = db
 		}
-		defer db.Close()
-		db.DB.DB().SetMaxOpenConns(8)
-		db.DB.DB().SetMaxIdleConns(1)
-		db.DB.DB().SetConnMaxLifetime(time.Second * 30)
 
-		dao = db
 		if !dao.Available() {
-			logger.WithError(err).Fatal("Failed to ping DB")
+			logger.Fatal("Failed to ping DB")
 		}
 		logger.Info("Connected to DB")
 
-		db.DB.LogMode(logger.Level >= logrus.TraceLevel)
-
 		// migration
-		{
-			opts := gormigrate.DefaultOptions
-			opts.TableName = *dbTablePrefix + "dbmigrations"
-			mig := gormigrate.New(db.DB, opts, mysql.Migrations)
-			if err := mig.Migrate(); err != nil {
-				logger.WithError(err).Fatal("Failed to apply DB migration")
-			}
+		if err := dao.Migrate(); err != nil {
+			logger.WithError(err).Fatal("Failed migrate DB")
 		}
 	}
 
 	// rpc pool
 	var rpcPool *rpcpool.Pool
 	{
-		if len(sumusNodes) == 0 {
-			logger.Fatal("Specify at least one Sumus node with --node flag")
+		if len(conf.Nodes) == 0 {
+			logger.Fatal("Specify at least one Sumus node")
 		}
-		if p, cls, err := rpcpool.New(sumusNodes...); err != nil {
+		if p, cls, err := rpcpool.New(conf.Nodes...); err != nil {
 			logger.WithError(err).Fatal("Failed to setup Sumus RPC pool")
 		} else {
 			defer cls()
@@ -207,9 +202,9 @@ func main() {
 
 	// block ID, explicitly set via args, to parse from
 	var userParseFromBlockID *big.Int
-	if *rangerParseFrom != "" {
+	if *argRangerParseFrom != "" {
 		userParseFromBlockID = new(big.Int)
-		if _, ok := userParseFromBlockID.SetString(*rangerParseFrom, 10); !ok || userParseFromBlockID.Cmp(new(big.Int)) < 0 {
+		if _, ok := userParseFromBlockID.SetString(*argRangerParseFrom, 10); !ok || userParseFromBlockID.Cmp(new(big.Int)) < 0 {
 			logger.Fatal("Failed to set blocks range from app argument")
 		}
 	}
@@ -347,10 +342,10 @@ func main() {
 
 	// nats transport
 	var natsTransport *serviceNats.Nats
-	{
+	if conf.API.Nats.URL != "" {
 		n, cls, err := serviceNats.New(
-			*natsURL,
-			formatPrefix(*natsSubjPrefix, "."),
+			conf.API.Nats.URL,
+			formatPrefix(conf.API.Nats.Prefix, "."),
 			api,
 			logger.WithField("task", "nats"),
 		)
@@ -363,11 +358,35 @@ func main() {
 		natsTransportTask, _ = gotask.NewTask("nats", n.Task)
 	}
 
+	// http transport
+	var httpTransport *serviceHTTP.HTTP
+	if conf.API.HTTP.Port > 0 {
+		svc, err := serviceHTTP.New(
+			conf.API.HTTP.Port,
+			api,
+			logger.WithField("task", "http"),
+		)
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to setup HTTP transport")
+		}
+
+		httpTransport = svc
+		httpTransportTask, _ = gotask.NewTask("http", svc.Task)
+	}
+
 	// refilling notifier
 	{
+		var natsIface notifier.NatsTransporter
+		if natsTransport != nil {
+			natsIface = natsTransport
+		}
+		var httpIface notifier.HTTPTransporter
+		if httpTransport != nil {
+			httpIface = httpTransport
+		}
 		n, err := notifier.New(
 			dao,
-			natsTransport,
+			natsIface, httpIface,
 			logger.WithField("task", "notifier"),
 		)
 		if err != nil {
@@ -378,12 +397,12 @@ func main() {
 	}
 
 	// metrics server
-	if *metricsPort > 0 {
+	if conf.Metrics > 0 {
 		var ns = "gm"
 		var ss = "mintsender_watcher"
 
 		// api nats
-		{
+		if natsTransport != nil {
 			m := serviceNats.Metrics{
 				RequestDuration: promauto.NewHistogramVec(prometheus.HistogramOpts{
 					Name:      "nats_request_duration",
@@ -399,6 +418,25 @@ func main() {
 				}),
 			}
 			natsTransport.AddMetrics(&m)
+		}
+
+		// api http
+		if httpTransport != nil {
+			m := serviceHTTP.Metrics{
+				RequestDuration: promauto.NewHistogramVec(prometheus.HistogramOpts{
+					Name:      "http_request_duration",
+					Help:      "API HTTP transport incoming request duration (seconds)",
+					Namespace: ns,
+					Subsystem: ss,
+				}, []string{"method"}),
+				NotificationDuration: promauto.NewHistogram(prometheus.HistogramOpts{
+					Name:      "http_notification_duration",
+					Help:      "API HTTP transport outgoing notification duration (seconds)",
+					Namespace: ns,
+					Subsystem: ss,
+				}),
+			}
+			httpTransport.AddMetrics(&m)
 		}
 
 		// block parser
@@ -418,7 +456,9 @@ func main() {
 				}),
 			}
 			blockObserver.AddMetrics(&m)
-			blockRanger.AddMetrics(&m)
+			if blockRanger != nil {
+				blockRanger.AddMetrics(&m)
+			}
 		}
 
 		// tx filter
@@ -440,7 +480,7 @@ func main() {
 			txFilter.AddMetrics(&m)
 		}
 
-		m := metrics.New(uint16(*metricsPort), logger.WithField("task", "metrics"))
+		m := metrics.New(uint16(conf.Metrics), logger.WithField("task", "metrics"))
 		metricsTask, _ = gotask.NewTask("metrics", m.Task)
 	}
 
@@ -491,6 +531,7 @@ func main() {
 		txFilterTask,
 		txSaverTask,
 		natsTransportTask,
+		httpTransportTask,
 		notifierTask,
 	}
 	for _, t := range tasks {
@@ -516,6 +557,7 @@ func main() {
 func onStop() {
 	stopWait(notifierTask)
 	stopWait(natsTransportTask)
+	stopWait(httpTransportTask)
 	stopWait(blockObserverTask)
 	stopWait(blockRangerTask)
 	stopWait(txFilterTask)
@@ -527,15 +569,32 @@ func onStop() {
 
 // ---
 
-type flagArray []string
+type config struct {
+	Log struct {
+		Level string `yaml:"level"`
+		Color bool   `yaml:"color"`
+		JSON  bool   `yaml:"json"`
+	} `yaml:"log"`
 
-func (i *flagArray) String() string {
-	return strings.Join(*i, " ")
-}
+	API struct {
+		HTTP struct {
+			Port uint `yaml:"port"`
+		} `yaml:"http"`
 
-func (i *flagArray) Set(value string) error {
-	*i = append(*i, value)
-	return nil
+		Nats struct {
+			URL    string `yaml:"url"`
+			Prefix string `yaml:"prefix"`
+		} `yaml:"nats"`
+	} `yaml:"api"`
+
+	DB struct {
+		Driver string `yaml:"driver"`
+		DSN    string `yaml:"dsn"`
+		Prefix string `yaml:"prefix"`
+	} `yaml:"db"`
+
+	Metrics uint     `yaml:"metrics"`
+	Nodes   []string `yaml:"nodes"`
 }
 
 // ---

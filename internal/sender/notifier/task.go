@@ -51,20 +51,47 @@ func (n *Notifier) Task(token *gotask.Token) {
 				continue
 			}
 
-			notiError := "Transaction failed"
+			notiErrorDesc := "Transaction failed"
 			if snd.Status == types.SendingConfirmed {
-				notiError = ""
+				notiErrorDesc = ""
 			}
 
 			// notify
-			err := n.transporter.PublishSentEvent(
-				snd.Status == types.SendingConfirmed,
-				notiError,
-				snd.Service, snd.RequestID,
-				snd.To, snd.Token, snd.Amount, snd.Digest,
-			)
-			if err != nil {
-				n.logger.WithField("id", snd.ID).WithError(err).Error("Failed to notify")
+			var notiErr error
+			switch snd.Transport {
+			case types.SendingNats:
+				if n.natsTransporter != nil {
+					notiErr = n.natsTransporter.PublishSentEvent(
+						snd.Status == types.SendingConfirmed,
+						notiErrorDesc,
+						snd.Service, snd.RequestID,
+						snd.To, snd.Token, snd.Amount, snd.Digest,
+					)
+				} else {
+					n.logger.Warn("Nats transport is disabled, skipping notification")
+					continue
+				}
+			case types.SendingHTTP:
+				if n.httpTransporter != nil {
+					if snd.CallbackURL != "" {
+						notiErr = n.httpTransporter.PublishSentEvent(
+							snd.Status == types.SendingConfirmed,
+							notiErrorDesc,
+							snd.Service, snd.RequestID, snd.CallbackURL,
+							snd.To, snd.Token, snd.Amount, snd.Digest,
+						)
+					}
+				} else {
+					n.logger.Warn("HTTP transport is disabled, skipping notification")
+					continue
+				}
+			default:
+				n.logger.Errorf("Transport %v is not implemented", snd.Transport)
+				continue
+			}
+
+			if notiErr != nil {
+				n.logger.WithField("id", snd.ID).WithError(notiErr).Error("Failed to notify")
 
 				// notify next time
 				when := time.Now().UTC()
