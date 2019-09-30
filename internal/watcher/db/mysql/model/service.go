@@ -6,7 +6,6 @@ import (
 
 // Service model
 type Service struct {
-	Base
 	ID          uint64 `gorm:"PRIMARY_KEY;AUTO_INCREMENT:true;NOT NULL"`
 	Name        string `gorm:"SIZE:64;NOT NULL"`
 	Transport   uint8  `gorm:"NOT NULL"`

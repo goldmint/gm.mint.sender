@@ -9,9 +9,8 @@ import (
 
 // Wallet model
 type Wallet struct {
-	Base
-	PublicKey []byte  `gorm:"SIZE:32;NOT NULL"`
-	ServiceID uint64  `gorm:"NOT NULL"`
+	PublicKey []byte `gorm:"SIZE:32;NOT NULL"`
+	ServiceID uint64 `gorm:"NOT NULL"`
 	Service   Service
 }
 

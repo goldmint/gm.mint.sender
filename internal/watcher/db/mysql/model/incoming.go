@@ -12,7 +12,6 @@ import (
 
 // Incoming model
 type Incoming struct {
-	Base
 	ID            uint64 `gorm:"PRIMARY_KEY;AUTO_INCREMENT:true;NOT NULL"`
 	ServiceID     uint64 `gorm:"NOT NULL"`
 	Service       Service

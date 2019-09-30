@@ -12,7 +12,6 @@ import (
 
 // Sending model
 type Sending struct {
-	Base
 	ID            uint64     `gorm:"PRIMARY_KEY;AUTO_INCREMENT:true;NOT NULL"`
 	Transport     uint8      `gorm:"NOT NULL"`
 	Service       string     `gorm:"SIZE:64;NOT NULL"`
