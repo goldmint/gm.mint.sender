@@ -22,7 +22,7 @@ type Incoming struct {
 	Token         uint16     `gorm:"NOT NULL"`
 	Digest        []byte     `gorm:"SIZE:32;NOT NULL"`
 	Block         []byte     `gorm:"SIZE:32;NOT NULL"`
-	Timestamp     time.Time  `gorm:"NOT NULL"`
+	Timestamp     time.Time  `gorm:"NOT NULL;DEFAULT:current_timestamp"`
 	FirstNotifyAt *time.Time `gorm:""`
 	NotifyAt      *time.Time `gorm:""`
 	Notified      bool       `gorm:"NOT NULL"`
