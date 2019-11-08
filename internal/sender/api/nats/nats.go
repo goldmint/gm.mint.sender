@@ -46,7 +46,7 @@ func New(
 		logger.Warnf("Nats reconnected: %v", url)
 	})
 	natsConnection.SetDisconnectHandler(func(_ *gonats.Conn) {
-		logger.Warnf("Nats disconnected: %v", url)
+		logger.Infof("Nats disconnected: %v", url)
 	})
 	logger.Infof("Nats transport enabled: %v", url)
 
