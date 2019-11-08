@@ -12,8 +12,8 @@ import (
 	"github.com/fatih/color"
 	"github.com/golang/protobuf/proto"
 	gonats "github.com/nats-io/go-nats"
-	senderNats "github.com/void616/gm-mint-sender/pkg/sender/nats/sender"
-	watcherNats "github.com/void616/gm-mint-sender/pkg/watcher/nats/wallet"
+	senderNats "github.com/void616/gm-mint-sender/pkg/sender/nats"
+	watcherNats "github.com/void616/gm-mint-sender/pkg/watcher/nats"
 	sumuslib "github.com/void616/gm-sumuslib"
 	"github.com/void616/gm-sumuslib/amount"
 )
@@ -134,10 +134,10 @@ func main() {
 // ---
 
 func natsSubscribeRefillings() {
-	subj := *natsSubjPrefix + watcherNats.SubjectRefill
+	subj := *natsSubjPrefix + watcherNats.Refill{}.Subject()
 	_, err := nats.Subscribe(subj, func(m *gonats.Msg) {
 		// get
-		reqModel := watcherNats.RefillEvent{}
+		reqModel := watcherNats.Refill{}
 		if err := proto.Unmarshal(m.Data, &reqModel); err != nil {
 			failln("Failed to unmarshal: %v", err)
 			return
@@ -148,7 +148,7 @@ func natsSubscribeRefillings() {
 			return
 		}
 		// reply
-		repModel := watcherNats.RefillEventReply{Success: true}
+		repModel := watcherNats.RefillAck{Success: true}
 		rep, err := proto.Marshal(&repModel)
 		if err != nil {
 			failln("Failed to marshal: %v", err)
@@ -167,10 +167,10 @@ func natsSubscribeRefillings() {
 }
 
 func natsSubscribeSendings() {
-	subj := *natsSubjPrefix + senderNats.SubjectSent
+	subj := *natsSubjPrefix + senderNats.Sent{}.Subject()
 	_, err := nats.Subscribe(subj, func(m *gonats.Msg) {
 		// get
-		reqModel := senderNats.SentEvent{}
+		reqModel := senderNats.Sent{}
 		if err := proto.Unmarshal(m.Data, &reqModel); err != nil {
 			failln("Failed to unmarshal: %v", err)
 			return
@@ -181,7 +181,7 @@ func natsSubscribeSendings() {
 			return
 		}
 		// reply
-		repModel := senderNats.SentEventReply{Success: true}
+		repModel := senderNats.SentAck{Success: true}
 		rep, err := proto.Marshal(&repModel)
 		if err != nil {
 			failln("Failed to marshal: %v", err)
@@ -237,12 +237,12 @@ func (c *cmdAddRemoveWallet) Parse(s string) error {
 }
 
 func (c *cmdAddRemoveWallet) Perform() (string, error) {
-	req, _ := proto.Marshal(&watcherNats.AddRemoveRequest{
+	req, _ := proto.Marshal(&watcherNats.AddRemove{
 		Service:   c.tag,
 		Add:       c.add,
 		PublicKey: []string{c.pubkey},
 	})
-	msg, err := nats.Request(*natsSubjPrefix+watcherNats.SubjectWatch, req, time.Second*5)
+	msg, err := nats.Request(*natsSubjPrefix+watcherNats.AddRemove{}.Subject(), req, time.Second*5)
 	if err != nil || msg == nil {
 		return "", fmt.Errorf("send request: %v", err)
 	}
@@ -299,14 +299,14 @@ func (c *cmdSend) Parse(s string) error {
 
 func (c *cmdSend) Perform() (string, error) {
 	id := fmt.Sprint(time.Now().UTC().UnixNano())
-	req, _ := proto.Marshal(&senderNats.SendRequest{
+	req, _ := proto.Marshal(&senderNats.Send{
 		Service:   c.tag,
 		Id:        id,
 		PublicKey: c.pubkey,
 		Amount:    c.amo,
 		Token:     c.token,
 	})
-	msg, err := nats.Request(*natsSubjPrefix+senderNats.SubjectSend, req, time.Second*5)
+	msg, err := nats.Request(*natsSubjPrefix+senderNats.Send{}.Subject(), req, time.Second*5)
 	if err != nil || msg == nil {
 		return "", fmt.Errorf("send request: %v", err)
 	}

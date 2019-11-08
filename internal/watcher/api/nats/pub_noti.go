@@ -5,7 +5,7 @@ import (
 	"time"
 
 	proto "github.com/golang/protobuf/proto"
-	walletsvc "github.com/void616/gm-mint-sender/pkg/watcher/nats/wallet"
+	walletsvc "github.com/void616/gm-mint-sender/pkg/watcher/nats"
 	sumuslib "github.com/void616/gm-sumuslib"
 	"github.com/void616/gm-sumuslib/amount"
 )
@@ -20,7 +20,7 @@ func (n *Nats) NotifyRefilling(service string, to, from sumuslib.PublicKey, t su
 		}(time.Now())
 	}
 
-	reqModel := &walletsvc.RefillEvent{
+	reqModel := &walletsvc.Refill{
 		Service:     service,
 		PublicKey:   to.String(),
 		From:        from.String(),
@@ -34,12 +34,12 @@ func (n *Nats) NotifyRefilling(service string, to, from sumuslib.PublicKey, t su
 		return err
 	}
 
-	msg, err := n.natsConnection.Request(n.subjPrefix+walletsvc.SubjectRefill, req, time.Second*5)
+	msg, err := n.natsConnection.Request(n.subjPrefix+walletsvc.Refill{}.Subject(), req, time.Second*5)
 	if err != nil {
 		return err
 	}
 
-	repModel := walletsvc.RefillEventReply{}
+	repModel := walletsvc.RefillAck{}
 	if err := proto.Unmarshal(msg.Data, &repModel); err != nil {
 		return err
 	}

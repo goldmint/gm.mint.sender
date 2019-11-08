@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package request;
+
+option go_package = "watcher";
+option csharp_namespace = "MintSender.Watcher.Request";
+
+// AddRemove is a request to the service to add or remove a wallet by it's public key
+message AddRemove {
+	string service				= 1; // Service name (to differentiate multiple requestors): 1..64
+	repeated string publicKey	= 2; // Wallet address in Base58
+	bool add					= 3; // True to add wallet, otherwise to remove it
+}
+
+// AddRemoveReply is a reply for AddRemove
+message AddRemoveReply {
+	bool success = 1; // Success is true in case of success
+	string error = 2; // Error contains error descrition in case of failure
+}

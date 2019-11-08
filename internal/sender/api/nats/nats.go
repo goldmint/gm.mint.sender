@@ -6,7 +6,7 @@ import (
 	gonats "github.com/nats-io/go-nats"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
-	senderNats "github.com/void616/gm-mint-sender/pkg/sender/nats/sender"
+	senderNats "github.com/void616/gm-mint-sender/pkg/sender/nats"
 	sumuslib "github.com/void616/gm-sumuslib"
 	"github.com/void616/gm-sumuslib/amount"
 	"github.com/void616/gotask"
@@ -78,9 +78,9 @@ func (n *Nats) Task(token *gotask.Token) {
 	nc := n.natsConnection
 
 	// sub for sending requests
-	_, err := nc.Subscribe(n.subjPrefix+senderNats.SubjectSend, n.subSendRequest)
+	_, err := nc.Subscribe(n.subjPrefix+senderNats.Send{}.Subject(), n.subSendRequest)
 	if err != nil {
-		n.logger.WithError(err).Errorf("Failed to subscribe to %v", n.subjPrefix+senderNats.SubjectSend)
+		n.logger.WithError(err).Errorf("Failed to subscribe to %v", n.subjPrefix+senderNats.Send{}.Subject())
 	}
 
 	// wait

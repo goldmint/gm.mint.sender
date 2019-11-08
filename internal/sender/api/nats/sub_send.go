@@ -8,7 +8,7 @@ import (
 
 	proto "github.com/golang/protobuf/proto"
 	gonats "github.com/nats-io/go-nats"
-	senderNats "github.com/void616/gm-mint-sender/pkg/sender/nats/sender"
+	senderNats "github.com/void616/gm-mint-sender/pkg/sender/nats"
 	sumuslib "github.com/void616/gm-sumuslib"
 	"github.com/void616/gm-sumuslib/amount"
 )
@@ -25,7 +25,7 @@ func (n *Nats) subSendRequest(m *gonats.Msg) {
 	}
 
 	// parse
-	req := senderNats.SendRequest{}
+	req := senderNats.Send{}
 	if err := proto.Unmarshal(m.Data, &req); err != nil {
 		n.logger.WithError(err).Error("Failed to unmarshal request")
 		return

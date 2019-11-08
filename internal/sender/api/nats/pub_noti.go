@@ -5,7 +5,7 @@ import (
 	"time"
 
 	proto "github.com/golang/protobuf/proto"
-	senderNatsProto "github.com/void616/gm-mint-sender/pkg/sender/nats/sender"
+	senderNatsProto "github.com/void616/gm-mint-sender/pkg/sender/nats"
 	sumuslib "github.com/void616/gm-sumuslib"
 	"github.com/void616/gm-sumuslib/amount"
 )
@@ -32,7 +32,7 @@ func (n *Nats) PublishSentEvent(
 		transaction = (*digest).String()
 	}
 
-	reqModel := senderNatsProto.SentEvent{
+	reqModel := senderNatsProto.Sent{
 		Success:     success,
 		Error:       msgerr,
 		Service:     service,
@@ -48,12 +48,12 @@ func (n *Nats) PublishSentEvent(
 		return err
 	}
 
-	msg, err := n.natsConnection.Request(n.subjPrefix+senderNatsProto.SubjectSent, req, time.Second*10)
+	msg, err := n.natsConnection.Request(n.subjPrefix+senderNatsProto.Sent{}.Subject(), req, time.Second*10)
 	if err != nil {
 		return err
 	}
 
-	repModel := senderNatsProto.SentEventReply{}
+	repModel := senderNatsProto.SentAck{}
 	if err := proto.Unmarshal(msg.Data, &repModel); err != nil {
 		return err
 	}

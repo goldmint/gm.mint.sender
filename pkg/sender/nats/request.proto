@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package request;
+
+option go_package = "sender";
+option csharp_namespace = "MintSender.Sender.Request";
+
+// Send is a request to the service to send token to the specified wallet
+message Send {
+	string service = 1;    // Service name (to differentiate multiple requestors): 1..64
+	string id = 2;         // Unique request ID (within service): 1..64
+	string publicKey = 3;  // Destination wallet address in Base58
+	string token = 4;      // GOLD or MNT
+	string amount = 5;     // Token amount in major units: 1.234 (18 decimal places)
+}
+
+// SendReply is a reply for Send
+message SendReply {
+	bool success = 1;  // Success is true in case of success
+	string error = 2;  // Error contains error descrition in case of failure
+}

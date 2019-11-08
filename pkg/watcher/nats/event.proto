@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package event;
+
+option go_package = "watcher";
+option csharp_namespace = "MintSender.Watcher.Event";
+
+// Refill is an event from the service notifying about a wallet refilling transaction
+message Refill {
+	string service 		= 1; // Service name (to differentiate multiple requestors): 1..64
+	string publicKey 	= 2; // Destination (watching) wallet address in Base58
+	string from 		= 3; // Source wallet address in Base58
+	string token 		= 4; // GOLD or MNT
+	string amount 		= 5; // Token amount in major units: 1.234 (18 decimal places)
+	string transaction 	= 6; // Digest of the refilling tx in Base58
+}
+
+// RefillAck is a reply for Refill
+message RefillAck {
+	bool success = 1; // Success is true in case of success
+	string error = 2; // Error contains error descrition in case of failure
+}

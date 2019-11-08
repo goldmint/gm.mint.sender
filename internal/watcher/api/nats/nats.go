@@ -7,7 +7,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"github.com/void616/gm-mint-sender/internal/watcher/db/types"
-	walletNats "github.com/void616/gm-mint-sender/pkg/watcher/nats/wallet"
+	walletNats "github.com/void616/gm-mint-sender/pkg/watcher/nats"
 	sumuslib "github.com/void616/gm-sumuslib"
 	"github.com/void616/gotask"
 )
@@ -78,9 +78,10 @@ func (n *Nats) Task(token *gotask.Token) {
 	nc := n.natsConnection
 
 	// sub for wallet add/remove ops
-	_, err := nc.Subscribe(n.subjPrefix+walletNats.SubjectWatch, n.subAddRemoveWallet)
+	subj := n.subjPrefix + walletNats.AddRemove{}.Subject()
+	_, err := nc.Subscribe(subj, n.subAddRemoveWallet)
 	if err != nil {
-		n.logger.WithError(err).Errorf("Failed to subscribe to %v", n.subjPrefix+walletNats.SubjectWatch)
+		n.logger.WithError(err).Errorf("Failed to subscribe to %v", subj)
 	}
 
 	// wait

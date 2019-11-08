@@ -8,7 +8,7 @@ import (
 	gonats "github.com/nats-io/go-nats"
 	"github.com/void616/gm-mint-sender/internal/watcher/api/model"
 	"github.com/void616/gm-mint-sender/internal/watcher/db/types"
-	walletNats "github.com/void616/gm-mint-sender/pkg/watcher/nats/wallet"
+	walletNats "github.com/void616/gm-mint-sender/pkg/watcher/nats"
 	sumuslib "github.com/void616/gm-sumuslib"
 )
 
@@ -24,7 +24,7 @@ func (n *Nats) subAddRemoveWallet(m *gonats.Msg) {
 	}
 
 	// parse
-	req := walletNats.AddRemoveRequest{}
+	req := walletNats.AddRemove{}
 	if err := proto.Unmarshal(m.Data, &req); err != nil {
 		n.logger.WithError(err).Error("Failed to unmarshal request")
 		return
