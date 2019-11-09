@@ -21,16 +21,15 @@ split = $(word $2,$(subst /, ,$1))
 
 .PHONY: build
 
-all: build
+all: deps test build image push
 
 deps:
 	@echo "Ensure you've installed Protobuf compiler https://github.com/protocolbuffers/protobuf/releases"
 
-gen:
-	go generate ./...
-
 test: gen
 	go test ./...
+
+build: clean gen $(TARGETS)
 
 clean:
 	rm -rf ./build/bin/* | true
@@ -38,7 +37,8 @@ clean:
 	rm -rf ./build/dist/* | true
 	mkdir -p ./build/dist | true
 
-build: clean gen $(TARGETS)
+gen:
+	go generate ./...
 
 $(TARGETS):
 	@{ \
@@ -62,11 +62,10 @@ $(TARGETS):
 	fi ;\
 	}
 
-dist:
-
-
-dockerize:
+image:
 	docker build -t $(GM_DOCKER_PREFIX)/mintsender-watcher:$(BRANCH) -f ./build/dockerfile-watcher-linux-amd64 .
 	docker build -t $(GM_DOCKER_PREFIX)/mintsender-sender:$(BRANCH) -f ./build/dockerfile-sender-linux-amd64 .
+	
+push:
 	docker push $(GM_DOCKER_PREFIX)/mintsender-watcher:$(BRANCH)
 	docker push $(GM_DOCKER_PREFIX)/mintsender-sender:$(BRANCH)
