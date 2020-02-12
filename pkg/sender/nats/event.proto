@@ -22,3 +22,19 @@ message SentAck {
 	bool success = 1;  // Success is true in case of success
 	string error = 2;  // Error contains error descrition in case of failure
 }
+
+// Approved is an event from the service notifying about a wallet approvement result
+message Approved {
+	bool success = 1;        // Success is true in case of success
+	string error = 2;        // Error contains error descrition in case of failure
+	string service = 3;      // Service name (to differentiate multiple requestors): 1..64
+	string id = 4;           // Unique request ID: 1..64
+	string publicKey = 5;    // Destination wallet address in Base58 (empty on failure)
+	string transaction = 6;  // Transaction digest in Base58 (empty on failure)
+}
+
+// ApprovedAck is a reply for Approved
+message ApprovedAck {
+	bool success = 1;  // Success is true in case of success
+	string error = 2;  // Error contains error descrition in case of failure
+}

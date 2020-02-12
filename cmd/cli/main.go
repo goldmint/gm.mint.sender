@@ -12,9 +12,9 @@ import (
 	"github.com/fatih/color"
 	"github.com/golang/protobuf/proto"
 	gonats "github.com/nats-io/go-nats"
+	mint "github.com/void616/gm.mint"
 	senderNats "github.com/void616/gm.mint.sender/pkg/sender/nats"
 	watcherNats "github.com/void616/gm.mint.sender/pkg/watcher/nats"
-	mint "github.com/void616/gm.mint"
 	"github.com/void616/gm.mint/amount"
 )
 
@@ -69,6 +69,12 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		natsSubscribeApprovement()
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 		natsSubscribeSendings()
 	}()
 
@@ -93,6 +99,7 @@ func main() {
 			continue
 		case line == "help" || line == "?":
 			(&cmdAddRemoveWallet{}).Help()
+			(&cmdApprove{}).Help()
 			(&cmdSend{}).Help()
 			continue
 		case line == "exit":
@@ -108,6 +115,8 @@ func main() {
 		switch {
 		case (&cmdAddRemoveWallet{}).Is(line):
 			cmd = &cmdAddRemoveWallet{}
+		case (&cmdApprove{}).Is(line):
+			cmd = &cmdApprove{}
 		case (&cmdSend{}).Is(line):
 			cmd = &cmdSend{}
 		default:
@@ -159,6 +168,43 @@ func natsSubscribeRefillings() {
 			return
 		}
 		event("%v %v deposited to %v, tag %v, tx %v", reqModel.GetAmount(), reqModel.GetToken(), reqModel.GetPublicKey(), reqModel.GetService(), reqModel.GetTransaction())
+	})
+	if err != nil {
+		failln("Failed to subscribe: %v", err)
+		return
+	}
+}
+
+func natsSubscribeApprovement() {
+	subj := *natsSubjPrefix + senderNats.Approved{}.Subject()
+	_, err := nats.Subscribe(subj, func(m *gonats.Msg) {
+		// get
+		reqModel := senderNats.Approved{}
+		if err := proto.Unmarshal(m.Data, &reqModel); err != nil {
+			failln("Failed to unmarshal: %v", err)
+			return
+		}
+		// check service
+		if !hasTag(reqModel.GetService()) {
+			event("Approving tag %v ignored", reqModel.GetService())
+			return
+		}
+		// reply
+		repModel := senderNats.ApprovedAck{Success: true}
+		rep, err := proto.Marshal(&repModel)
+		if err != nil {
+			failln("Failed to marshal: %v", err)
+			return
+		}
+		if err := nats.Publish(m.Reply, rep); err != nil {
+			failln("Failed to reply: %v", err)
+			return
+		}
+		if reqModel.GetSuccess() {
+			event("Approvement #%v (target %v) completed, tag %v, tx %v", reqModel.GetId(), mint.MaskString6P4(reqModel.GetPublicKey()), reqModel.GetService(), reqModel.GetTransaction())
+		} else {
+			event("Approvement #%v failed, tag %v. Error: %v", reqModel.GetId(), reqModel.GetService(), reqModel.GetError())
+		}
 	})
 	if err != nil {
 		failln("Failed to subscribe: %v", err)
@@ -267,6 +313,54 @@ func (c *cmdAddRemoveWallet) Help() {
 	success("unwatch ")
 	echo("<public_key> <tag> ")
 	echoln("Remove a wallet from the watcher-service")
+}
+
+type cmdApprove struct {
+	tag    string
+	pubkey string
+}
+
+func (c *cmdApprove) Is(s string) bool {
+	return strings.HasPrefix(s, "approve ")
+}
+
+func (c *cmdApprove) Parse(s string) error {
+	var null string
+	if _, err := fmt.Sscanf(s, "%s %s %s", &null, &c.pubkey, &c.tag); err != nil {
+		return err
+	}
+	if _, err := mint.ParsePublicKey(c.pubkey); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *cmdApprove) Perform() (string, error) {
+	id := fmt.Sprint(time.Now().UTC().UnixNano())
+	req, _ := proto.Marshal(&senderNats.Approve{
+		Service:   c.tag,
+		Id:        id,
+		PublicKey: c.pubkey,
+	})
+	msg, err := nats.Request(*natsSubjPrefix+senderNats.Approve{}.Subject(), req, time.Second*5)
+	if err != nil || msg == nil {
+		return "", fmt.Errorf("send request: %v", err)
+	}
+	rep := senderNats.ApproveReply{}
+	if err := proto.Unmarshal(msg.Data, &rep); err != nil {
+		return "", fmt.Errorf("unmarshal: %v", err)
+	}
+	if rep.GetSuccess() {
+		watchTag(c.tag, true)
+		return fmt.Sprintf("Done. Approvement %v (tag %v)", id, c.tag), nil
+	}
+	return "", fmt.Errorf("service error: %v", rep.GetError())
+}
+
+func (c *cmdApprove) Help() {
+	success("approve ")
+	echo("<public_key> ")
+	echoln("Send an address approvement request to the sender-service")
 }
 
 type cmdSend struct {

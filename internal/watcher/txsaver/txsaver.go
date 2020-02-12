@@ -4,11 +4,11 @@ import (
 	"sync"
 
 	"github.com/sirupsen/logrus"
+	mint "github.com/void616/gm.mint"
 	"github.com/void616/gm.mint.sender/internal/mint/blockparser"
 	"github.com/void616/gm.mint.sender/internal/watcher/api/model"
 	"github.com/void616/gm.mint.sender/internal/watcher/db"
 	"github.com/void616/gm.mint.sender/internal/watcher/db/types"
-	mint "github.com/void616/gm.mint"
 )
 
 // Saver saves filtered transactions to the DB

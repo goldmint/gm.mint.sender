@@ -6,16 +6,16 @@ import (
 	"math/big"
 	"sort"
 
-	"github.com/void616/gm.mint.sender/internal/sender/db/types"
 	mint "github.com/void616/gm.mint"
 	"github.com/void616/gm.mint.rpc/request"
+	"github.com/void616/gm.mint.sender/internal/sender/db/types"
 	"github.com/void616/gm.mint/amount"
 	"github.com/void616/gm.mint/fee"
 	"github.com/void616/gm.mint/transaction"
 )
 
-// processRequest signs and posts transaction
-func (s *Signer) processRequest(snd *types.Sending, currentBlock *big.Int) (posted bool) {
+// processSendingRequest signs and posts transaction
+func (s *Signer) processSendingRequest(snd *types.Sending, currentBlock *big.Int) (posted bool) {
 	posted = false
 
 	var sigpub mint.PublicKey
@@ -23,11 +23,43 @@ func (s *Signer) processRequest(snd *types.Sending, currentBlock *big.Int) (post
 
 	logger := s.logger.WithField("id", snd.ID)
 
+	// ensure destination is approved
+	if snd.Token == mint.TokenGOLD {
+		ctx, conn, cls, err := s.pool.Conn()
+		if err != nil {
+			logger.WithError(err).Errorf("Failed to get free connection")
+			return false
+		}
+		defer cls()
+
+		ws, rerr, err := request.GetWalletState(ctx, conn, snd.To)
+		if err != nil {
+			logger.WithError(err).Errorf("Failed to get destination wallet state")
+			return false
+		}
+		if rerr != nil {
+			logger.WithError(rerr.Err()).Errorf("Failed to get destination wallet state")
+			return false
+		}
+
+		found := false
+		for _, v := range ws.Tags {
+			if v == mint.WalletTagApproved.String() {
+				found = true
+				break
+			}
+		}
+		if !found {
+			logger.Infof("Destination is still not approved")
+			return false
+		}
+	}
+
 	// new tx: pick a signer
 	if snd.Sender == nil {
-		p, err := s.pickSigner(snd.Amount, snd.Token)
+		p, err := s.pickSendingSigner(snd.Amount, snd.Token)
 		if err != nil {
-			logger.WithError(err).Errorln("Failed to pick signer")
+			logger.WithError(err).Errorf("Failed to pick signer")
 			return false
 		}
 		sigpub = p
@@ -36,7 +68,7 @@ func (s *Signer) processRequest(snd *types.Sending, currentBlock *big.Int) (post
 		// stale tx: find signer
 		p := *snd.Sender
 		if _, ok := s.signers[p]; !ok {
-			logger.WithError(fmt.Errorf("signer %v doesn't exist", p.String())).Errorln("Failed to find signer")
+			logger.WithError(fmt.Errorf("signer %v doesn't exist", p.String())).Errorf("Failed to find signer")
 			return false
 		}
 		sigpub = p
@@ -60,7 +92,7 @@ func (s *Signer) processRequest(snd *types.Sending, currentBlock *big.Int) (post
 	}
 	stx, err := tatx.Sign(signer.signer, nonce)
 	if err != nil {
-		logger.WithError(err).Errorln("Failed to sign transaction")
+		logger.WithError(err).Errorf("Failed to sign transaction")
 		return false
 	}
 
@@ -95,7 +127,7 @@ func (s *Signer) processRequest(snd *types.Sending, currentBlock *big.Int) (post
 	// get free connection
 	ctx, conn, cls, err := s.pool.Conn()
 	if err != nil {
-		logger.WithError(err).Errorln("Failed to get free RPC connection")
+		logger.WithError(err).Errorf("Failed to get free RPC connection")
 		return false
 	}
 	defer cls()
@@ -110,7 +142,7 @@ func (s *Signer) processRequest(snd *types.Sending, currentBlock *big.Int) (post
 	*snd.Digest = stx.Digest
 	snd.SentAtBlock = new(big.Int).Set(currentBlock)
 	if err := s.dao.UpdateSending(snd); err != nil {
-		logger.WithError(err).Errorln("Failed to mark request posted")
+		logger.WithError(err).Errorf("Failed to mark request posted")
 		return false
 	}
 
@@ -120,17 +152,17 @@ func (s *Signer) processRequest(snd *types.Sending, currentBlock *big.Int) (post
 		if reject {
 			snd.Status = types.SendingFailed
 			if err := s.dao.UpdateSending(snd); err != nil {
-				logger.WithError(err).Errorln("Failed to mark request failed")
+				logger.WithError(err).Errorf("Failed to mark request failed")
 			}
 		}
 	}()
 
-	logger.Debugln("Sending transaction")
+	logger.Debugf("Sending transaction")
 
 	// post
 	_, rerr, err := request.AddTransaction(ctx, conn, transaction.TransferAssetTx, stx.Data)
 	if err != nil {
-		logger.WithError(err).Errorln("Sending failed")
+		logger.WithError(err).Errorf("Sending failed")
 		// don't reject, probably tx is posted
 		return false
 	}
@@ -138,7 +170,7 @@ func (s *Signer) processRequest(snd *types.Sending, currentBlock *big.Int) (post
 	if rerr != nil {
 		ncode, _, ok := rerr.GetReason()
 		if !ok {
-			logger.WithError(err).Errorln("Sending failed")
+			logger.WithError(err).Errorf("Sending failed")
 			// don't reject, probably tx is posted
 			return false
 		}
@@ -147,15 +179,15 @@ func (s *Signer) processRequest(snd *types.Sending, currentBlock *big.Int) (post
 		case ncode.TxAddedAlready():
 			// just ok
 		case ncode.TxWalletNotReady():
-			logger.Errorln("Node replied with: wallet not ready")
+			logger.Errorf("Node replied with: wallet not ready")
 			// fresh or repeated tx, doesn't matter, it's failed
 			reject = true
 			return false
 		case ncode.TxNonceAhead():
-			logger.Errorln("Node replied with: nonce ahead")
+			logger.Errorf("Node replied with: nonce ahead")
 			// not matter, keep posting it
 		case ncode.TxNonceBehind():
-			logger.Errorln("Node replied with: nonce behind (duplicate)")
+			logger.Errorf("Node replied with: nonce behind (duplicate)")
 			// reject it in case it's a fresh tx
 			if freshNonce {
 				reject = true
@@ -169,8 +201,8 @@ func (s *Signer) processRequest(snd *types.Sending, currentBlock *big.Int) (post
 	return
 }
 
-// pickSigner picks appropriate signer
-func (s *Signer) pickSigner(a *amount.Amount, t mint.Token) (mint.PublicKey, error) {
+// pickSendingSigner picks appropriate signer
+func (s *Signer) pickSendingSigner(a *amount.Amount, t mint.Token) (mint.PublicKey, error) {
 
 	sorted := make([]mint.PublicKey, 0)
 	for _, v := range s.signers {

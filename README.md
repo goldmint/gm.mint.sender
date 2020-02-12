@@ -63,13 +63,13 @@ log:
   level: debug
   color: yes
   json: no
-# API (one of)
+# API (at least one)
 api:
-  # Nats interface (optional)
+  # Nats interface
   nats:
     url: localhost:4222
     prefix: ""
-  # HTTP interface (optional)
+  # HTTP interface
   http:
     port: 9001
 # Database

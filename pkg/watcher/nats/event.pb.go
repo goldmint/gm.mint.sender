@@ -35,7 +35,7 @@ func (m *Refill) Reset()         { *m = Refill{} }
 func (m *Refill) String() string { return proto.CompactTextString(m) }
 func (*Refill) ProtoMessage()    {}
 func (*Refill) Descriptor() ([]byte, []int) {
-	return fileDescriptor_event_4b31ab7e1f65d4e0, []int{0}
+	return fileDescriptor_event_f6a06832078200ee, []int{0}
 }
 func (m *Refill) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Refill.Unmarshal(m, b)
@@ -110,7 +110,7 @@ func (m *RefillAck) Reset()         { *m = RefillAck{} }
 func (m *RefillAck) String() string { return proto.CompactTextString(m) }
 func (*RefillAck) ProtoMessage()    {}
 func (*RefillAck) Descriptor() ([]byte, []int) {
-	return fileDescriptor_event_4b31ab7e1f65d4e0, []int{1}
+	return fileDescriptor_event_f6a06832078200ee, []int{1}
 }
 func (m *RefillAck) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RefillAck.Unmarshal(m, b)
@@ -149,9 +149,9 @@ func init() {
 	proto.RegisterType((*RefillAck)(nil), "event.RefillAck")
 }
 
-func init() { proto.RegisterFile("event.proto", fileDescriptor_event_4b31ab7e1f65d4e0) }
+func init() { proto.RegisterFile("event.proto", fileDescriptor_event_f6a06832078200ee) }
 
-var fileDescriptor_event_4b31ab7e1f65d4e0 = []byte{
+var fileDescriptor_event_f6a06832078200ee = []byte{
 	// 221 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x4c, 0x90, 0x31, 0x4b, 0x03, 0x41,
 	0x10, 0x46, 0xb9, 0x98, 0xbb, 0x78, 0x93, 0x6e, 0x10, 0x99, 0xc2, 0x22, 0x04, 0x0b, 0xab, 0x6b,

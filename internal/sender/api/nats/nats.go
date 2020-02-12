@@ -6,8 +6,8 @@ import (
 	gonats "github.com/nats-io/go-nats"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
-	senderNats "github.com/void616/gm.mint.sender/pkg/sender/nats"
 	mint "github.com/void616/gm.mint"
+	senderNats "github.com/void616/gm.mint.sender/pkg/sender/nats"
 	"github.com/void616/gm.mint/amount"
 	"github.com/void616/gotask"
 )
@@ -24,6 +24,7 @@ type Nats struct {
 // API provides ability to interact with service API
 type API interface {
 	EnqueueSendingNats(id, service string, to mint.PublicKey, a *amount.Amount, t mint.Token) (dup, success bool)
+	EnqueueApprovementNats(id, service string, to mint.PublicKey) (dup, success bool)
 }
 
 // New instance
@@ -78,8 +79,14 @@ func (n *Nats) Task(token *gotask.Token) {
 
 	nc := n.natsConnection
 
+	// sub for approvement requests
+	_, err := nc.Subscribe(n.subjPrefix+senderNats.Approve{}.Subject(), n.subApproveRequest)
+	if err != nil {
+		n.logger.WithError(err).Errorf("Failed to subscribe to %v", n.subjPrefix+senderNats.Approve{}.Subject())
+	}
+
 	// sub for sending requests
-	_, err := nc.Subscribe(n.subjPrefix+senderNats.Send{}.Subject(), n.subSendRequest)
+	_, err = nc.Subscribe(n.subjPrefix+senderNats.Send{}.Subject(), n.subSendRequest)
 	if err != nil {
 		n.logger.WithError(err).Errorf("Failed to subscribe to %v", n.subjPrefix+senderNats.Send{}.Subject())
 	}

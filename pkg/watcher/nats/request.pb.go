@@ -32,7 +32,7 @@ func (m *AddRemove) Reset()         { *m = AddRemove{} }
 func (m *AddRemove) String() string { return proto.CompactTextString(m) }
 func (*AddRemove) ProtoMessage()    {}
 func (*AddRemove) Descriptor() ([]byte, []int) {
-	return fileDescriptor_request_3daf0dfc2f406e00, []int{0}
+	return fileDescriptor_request_4d73036cfa1f9269, []int{0}
 }
 func (m *AddRemove) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AddRemove.Unmarshal(m, b)
@@ -86,7 +86,7 @@ func (m *AddRemoveReply) Reset()         { *m = AddRemoveReply{} }
 func (m *AddRemoveReply) String() string { return proto.CompactTextString(m) }
 func (*AddRemoveReply) ProtoMessage()    {}
 func (*AddRemoveReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_request_3daf0dfc2f406e00, []int{1}
+	return fileDescriptor_request_4d73036cfa1f9269, []int{1}
 }
 func (m *AddRemoveReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AddRemoveReply.Unmarshal(m, b)
@@ -125,9 +125,9 @@ func init() {
 	proto.RegisterType((*AddRemoveReply)(nil), "request.AddRemoveReply")
 }
 
-func init() { proto.RegisterFile("request.proto", fileDescriptor_request_3daf0dfc2f406e00) }
+func init() { proto.RegisterFile("request.proto", fileDescriptor_request_4d73036cfa1f9269) }
 
-var fileDescriptor_request_3daf0dfc2f406e00 = []byte{
+var fileDescriptor_request_4d73036cfa1f9269 = []byte{
 	// 191 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x2d, 0x4a, 0x2d, 0x2c,
 	0x4d, 0x2d, 0x2e, 0xd1, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x87, 0x72, 0x95, 0x42, 0xb9,

@@ -8,7 +8,7 @@ import (
 	"github.com/void616/gm.mint.rpc/pool"
 )
 
-// Pool is Sumus RPC connection pool
+// Pool is node RPC connection pool
 type Pool struct {
 	timeout time.Duration
 	pool    *pool.Pool

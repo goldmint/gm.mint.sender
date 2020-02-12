@@ -25,6 +25,7 @@ type HTTP struct {
 // API provides ability to interact with service API
 type API interface {
 	EnqueueSendingHTTP(id, service, callbackURL string, to mint.PublicKey, a *amount.Amount, t mint.Token) (dup, success bool)
+	EnqueueApprovementHTTP(id, service, callbackURL string, to mint.PublicKey) (dup, success bool)
 }
 
 // New instance
@@ -51,6 +52,7 @@ func New(
 	}
 
 	r.Path("/send").Methods("POST").HandlerFunc(h.send)
+	r.Path("/approve").Methods("POST").HandlerFunc(h.approve)
 
 	logger.Infof("HTTP transport enabled on port %v", port)
 	return h, nil

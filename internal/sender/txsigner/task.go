@@ -4,15 +4,15 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/void616/gm.mint.sender/internal/sender/db/types"
 	"github.com/void616/gm.mint.rpc/request"
+	"github.com/void616/gm.mint.sender/internal/sender/db/types"
 	"github.com/void616/gotask"
 )
 
 // Task loop
 func (s *Signer) Task(token *gotask.Token) {
 
-	requests := make(chan *types.Sending, itemsPerShot*2)
+	requests := make(chan interface{}, itemsPerShot*4)
 	defer close(requests)
 
 	currentBlock := new(big.Int)
@@ -45,7 +45,43 @@ func (s *Signer) Task(token *gotask.Token) {
 
 		count := 0
 
-		// get stale requests
+		// get stale requests (approvements)
+		{
+			elderThan := new(big.Int).Sub(currentBlock, big.NewInt(staleAfterBlocks))
+
+			list, err := s.dao.ListStaleApprovements(elderThan, itemsPerShot)
+			if err != nil {
+				s.logger.WithError(err).Error("Failed to get stale transactions")
+				token.Sleep(time.Second * 30)
+				continue
+			}
+			for _, v := range list {
+				select {
+				case requests <- v:
+				default:
+				}
+			}
+			count += len(list)
+		}
+
+		// get new requests (approvements)
+		{
+			list, err := s.dao.ListEnqueuedApprovements(itemsPerShot)
+			if err != nil {
+				s.logger.WithError(err).Error("Failed to get new transactions")
+				token.Sleep(time.Second * 30)
+				continue
+			}
+			for _, v := range list {
+				select {
+				case requests <- v:
+				default:
+				}
+			}
+			count += len(list)
+		}
+
+		// get stale requests (sendings)
 		{
 			elderThan := new(big.Int).Sub(currentBlock, big.NewInt(staleAfterBlocks))
 
@@ -56,12 +92,15 @@ func (s *Signer) Task(token *gotask.Token) {
 				continue
 			}
 			for _, v := range list {
-				requests <- v
+				select {
+				case requests <- v:
+				default:
+				}
 			}
 			count += len(list)
 		}
 
-		// get new requests
+		// get new requests (sendings)
 		{
 			list, err := s.dao.ListEnqueuedSendings(itemsPerShot)
 			if err != nil {
@@ -70,7 +109,10 @@ func (s *Signer) Task(token *gotask.Token) {
 				continue
 			}
 			for _, v := range list {
-				requests <- v
+				select {
+				case requests <- v:
+				default:
+				}
 			}
 			count += len(list)
 		}
@@ -93,9 +135,16 @@ func (s *Signer) Task(token *gotask.Token) {
 			select {
 			default:
 				out = true
-			case snd := <-requests:
-				if s.processRequest(snd, currentBlock) {
-					processed++
+			case item := <-requests:
+				switch m := item.(type) {
+				case *types.Approvement:
+					if s.processApprovingRequest(m, currentBlock) {
+						processed++
+					}
+				case *types.Sending:
+					if s.processSendingRequest(m, currentBlock) {
+						processed++
+					}
 				}
 			}
 		}

@@ -5,17 +5,14 @@ import (
 	"time"
 
 	mint "github.com/void616/gm.mint"
-	"github.com/void616/gm.mint/amount"
 )
 
-// Sending model
-type Sending struct {
+// Approvement model
+type Approvement struct {
 	ID            uint64
 	Transport     SendingTransport
 	Status        SendingStatus
 	To            mint.PublicKey
-	Token         mint.Token
-	Amount        *amount.Amount
 	Sender        *mint.PublicKey
 	SenderNonce   *uint64
 	Digest        *mint.Digest

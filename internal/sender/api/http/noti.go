@@ -77,3 +77,66 @@ func (h *HTTP) PublishSentEvent(
 
 	return nil
 }
+
+// PublishApprovedEvent sends an approvement completion notification
+func (h *HTTP) PublishApprovedEvent(
+	success bool,
+	msgerr string,
+	service, requestID, callbackURL string,
+	to mint.PublicKey,
+	digest *mint.Digest,
+) error {
+	// metrics
+	if h.metrics != nil {
+		defer func(t time.Time) {
+			h.metrics.NotificationDuration.Observe(time.Since(t).Seconds())
+		}(time.Now())
+	}
+
+	transaction := ""
+	if digest != nil {
+		transaction = (*digest).String()
+	}
+
+	event := ApprovedEvent{
+		Success:     success,
+		Error:       msgerr,
+		Service:     service,
+		ID:          requestID,
+		PublicKey:   to.String(),
+		Transaction: transaction,
+	}
+
+	b, err := json.Marshal(&event)
+	if err != nil {
+		return err
+	}
+
+	// http request
+	{
+		timeoutSec := 10
+		transport := &http.Transport{
+			IdleConnTimeout: time.Second * time.Duration(timeoutSec),
+		}
+		client := &http.Client{
+			Timeout:   time.Second * time.Duration(timeoutSec),
+			Transport: transport,
+		}
+		req, err := http.NewRequest("POST", callbackURL, bytes.NewBuffer(b))
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Content-Type", "application/json; charset=utf-8")
+		resp, err := client.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != 200 {
+			return fmt.Errorf("callback status code is %v", resp.StatusCode)
+		}
+	}
+
+	return nil
+}

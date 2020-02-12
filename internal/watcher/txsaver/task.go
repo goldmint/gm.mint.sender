@@ -4,9 +4,10 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/void616/gm.mint.sender/internal/watcher/db/types"
 	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint.sender/internal/watcher/db/types"
 	"github.com/void616/gm.mint/amount"
+	"github.com/void616/gm.mint/transaction"
 	"github.com/void616/gotask"
 )
 
@@ -29,7 +30,7 @@ func (s *Saver) Task(token *gotask.Token) {
 			// save next filtered transaction
 			case tx := <-s.transactions:
 				// asset transaction
-				if tx.Type != mint.TransactionTransferAssets {
+				if tx.Type != transaction.TransferAssetTx {
 					break
 				}
 

@@ -19,13 +19,26 @@ func (c *Confirmer) Task(token *gotask.Token) {
 		for !empty {
 			select {
 			case tx := <-c.in:
-				if tx.Type == transaction.TransferAssetTx {
+				switch tx.Type {
 
+				case transaction.TransferAssetTx:
 					// save to death
 					saved := false
 					for !token.Stopped() && !saved {
-
 						if err := c.dao.SetSendingConfirmed(tx.Digest, tx.From, tx.Block); err != nil {
+							c.logger.WithError(err).WithField("digest", tx.Digest.String()).Errorf("Failed to confirm transaction")
+							token.Sleep(time.Second * 10)
+						} else {
+							saved = true
+							confirmedItems++
+						}
+					}
+
+				case transaction.SetWalletTagTx:
+					// save to death
+					saved := false
+					for !token.Stopped() && !saved {
+						if err := c.dao.SetApprovementConfirmed(tx.Digest, tx.From, tx.Block); err != nil {
 							c.logger.WithError(err).WithField("digest", tx.Digest.String()).Errorf("Failed to confirm transaction")
 							token.Sleep(time.Second * 10)
 						} else {

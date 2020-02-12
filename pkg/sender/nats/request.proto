@@ -19,3 +19,16 @@ message SendReply {
 	bool success = 1;  // Success is true in case of success
 	string error = 2;  // Error contains error descrition in case of failure
 }
+
+// Approve is a request to the service to approve specified wallet
+message Approve {
+	string service = 1;    // Service name (to differentiate multiple requestors): 1..64
+	string id = 2;         // Unique request ID (within service): 1..64
+	string publicKey = 3;  // Destination wallet address in Base58
+}
+
+// ApproveReply is a reply for Approve
+message ApproveReply {
+	bool success = 1;  // Success is true in case of success
+	string error = 2;  // Error contains error descrition in case of failure
+}

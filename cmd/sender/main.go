@@ -15,6 +15,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
+	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint.rpc/request"
 	"github.com/void616/gm.mint.sender/internal/metrics"
 	"github.com/void616/gm.mint.sender/internal/mint/blockobserver"
 	"github.com/void616/gm.mint.sender/internal/mint/blockparser"
@@ -31,9 +33,8 @@ import (
 	"github.com/void616/gm.mint.sender/internal/sender/txconfirmer"
 	"github.com/void616/gm.mint.sender/internal/sender/txsigner"
 	"github.com/void616/gm.mint.sender/internal/version"
-	mint "github.com/void616/gm.mint"
-	"github.com/void616/gm.mint.rpc/rpc"
 	"github.com/void616/gm.mint/signer"
+	"github.com/void616/gm.mint/transaction"
 	"github.com/void616/gotask"
 	"gopkg.in/yaml.v2"
 )
@@ -181,10 +182,10 @@ func main() {
 	var rpcPool *rpcpool.Pool
 	{
 		if len(conf.Nodes) == 0 {
-			logger.Fatal("Specify at least one Sumus node")
+			logger.Fatal("Specify at least one node")
 		}
 		if p, cls, err := rpcpool.New(conf.Nodes...); err != nil {
-			logger.WithError(err).Fatal("Failed to setup Sumus RPC pool")
+			logger.WithError(err).Fatal("Failed to setup RPC pool")
 		} else {
 			defer cls()
 			rpcPool = p
@@ -194,30 +195,32 @@ func main() {
 	// get latest block ID
 	latestBlockID := new(big.Int)
 	{
-		c, err := rpcPool.Get()
+		ctx, conn, cls, err := rpcPool.Conn()
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to get latest block ID")
 		}
-		state, code, err := rpc.BlockchainState(c.Conn())
+
+		state, rerr, err := request.GetBlockchainState(ctx, conn)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to get latest block ID")
 		}
-		if code != rpc.ECSuccess {
-			logger.WithError(fmt.Errorf("node code %v", code)).Fatal("Failed to get latest block ID")
+		if rerr != nil {
+			logger.WithError(rerr.Err()).Fatal("Failed to get latest block ID")
 		}
-		latestBlockID.Set(state.BlockCount)
+		latestBlockID.Set(state.BlockCount.Int)
 		latestBlockID.Sub(latestBlockID, big.NewInt(1))
-		c.Close()
+
+		cls()
 	}
 
 	// get the earliest unchecked block ID
 	var rangerParseFrom *big.Int
 	{
-		block, empty, err := dao.EarliestBlock()
+		block, ok, err := dao.EarliestBlock()
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to get earliest block ID")
 		}
-		if !empty {
+		if ok {
 			rangerParseFrom = block
 			if rangerParseFrom.Cmp(new(big.Int)) < 0 {
 				logger.Fatalf("Invalid earliest block")
@@ -287,8 +290,8 @@ func main() {
 	var txFilter *txfilter.Filter
 	{
 		// type/direction filter
-		filter := func(typ mint.Transaction, outgoing bool) bool {
-			return typ == mint.TransactionTransferAssets && outgoing
+		filter := func(typ transaction.Code, outgoing bool) bool {
+			return outgoing && (typ == transaction.TransferAssetTx || typ == transaction.SetWalletTagTx)
 		}
 
 		f, err := txfilter.New(

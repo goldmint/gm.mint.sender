@@ -5,15 +5,15 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
-	"github.com/void616/gm.mint.sender/internal/mint/rpcpool"
-	"github.com/void616/gm.mint.sender/internal/sender/db"
 	mint "github.com/void616/gm.mint"
 	"github.com/void616/gm.mint.rpc/request"
+	"github.com/void616/gm.mint.sender/internal/mint/rpcpool"
+	"github.com/void616/gm.mint.sender/internal/sender/db"
 	"github.com/void616/gm.mint/amount"
-	sumusSigner "github.com/void616/gm.mint/signer"
+	"github.com/void616/gm.mint/signer"
 )
 
-const itemsPerShot = 50
+const itemsPerShot = 25
 const staleAfterBlocks = 1
 
 // Signer signs and sends transactions
@@ -27,12 +27,13 @@ type Signer struct {
 
 // SignerData describes particular signer
 type SignerData struct {
-	signer      *sumusSigner.Signer
+	signer      *signer.Signer
 	public      mint.PublicKey
 	nonce       uint64
 	gold        *amount.Amount
 	mnt         *amount.Amount
 	emitter     bool
+	approver    bool
 	signedCount uint64
 	failed      bool
 }
@@ -41,7 +42,7 @@ type SignerData struct {
 func New(
 	pool *rpcpool.Pool,
 	dao db.DAO,
-	signers []*sumusSigner.Signer,
+	signers []*signer.Signer,
 	logger *logrus.Entry,
 ) (*Signer, error) {
 
@@ -72,6 +73,13 @@ func New(
 				break
 			}
 		}
+		approver := false
+		for _, t := range walletState.Tags {
+			if t == mint.WalletTagAuthority.String() {
+				approver = true
+				break
+			}
+		}
 
 		// check db for a greater nonce
 		dbnonce, err := dao.LatestSenderNonce(pubkey)
@@ -92,6 +100,7 @@ func New(
 			gold:        amount.FromAmount(walletState.Balance.Gold),
 			mnt:         amount.FromAmount(walletState.Balance.Mnt),
 			emitter:     emitter,
+			approver:    approver,
 			signedCount: 0,
 			failed:      false,
 		}

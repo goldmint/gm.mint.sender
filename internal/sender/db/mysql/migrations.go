@@ -18,10 +18,15 @@ var migrations = []*gormigrate.Migration{
 				AddUniqueIndex("ux_sender_sendings_service_requestid", "service", "request_id").
 				AddIndex("ix_sender_sendings_status", "status").
 				AddIndex("ix_sender_sendings_sentatblock", "sent_at_block").
+				CreateTable(&model.Approvement{}).
+				AddUniqueIndex("ux_sender_approvs_service_requestid", "service", "request_id").
+				AddIndex("ix_sender_approvs_status", "status").
+				AddIndex("ix_sender_approvs_sentatblock", "sent_at_block").
 				Error
 		},
 		Rollback: func(tx *gorm.DB) error {
 			return tx.
+				DropTable(&model.Approvement{}).
 				DropTable(&model.Sending{}).
 				DropTable(&model.Wallet{}).
 				Error

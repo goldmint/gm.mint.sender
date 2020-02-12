@@ -3,9 +3,9 @@ package mysql
 import (
 	"math/big"
 
+	mint "github.com/void616/gm.mint"
 	"github.com/void616/gm.mint.sender/internal/sender/db/mysql/model"
 	"github.com/void616/gm.mint.sender/internal/sender/db/types"
-	mint "github.com/void616/gm.mint"
 )
 
 // PutWallet implementation
@@ -47,6 +47,42 @@ func (d *Database) UpdateSending(v *types.Sending) error {
 // SetSendingConfirmed implementation
 func (d *Database) SetSendingConfirmed(dig mint.Digest, from mint.PublicKey, block *big.Int) error {
 	return d.Model(&model.Sending{}).
+		Where("`digest`=? AND `sender`=?", dig.Bytes(), from.Bytes()).
+		Update(
+			map[string]interface{}{
+				"status": uint8(types.SendingConfirmed),
+				"block":  block.Bytes(),
+			},
+		).
+		Limit(1).
+		Error
+}
+
+// PutApprovement implementation
+func (d *Database) PutApprovement(v *types.Approvement) error {
+	m := &model.Approvement{}
+	if err := m.MapFrom(v); err != nil {
+		return err
+	}
+	if err := d.Create(m).Error; err != nil {
+		return err
+	}
+	v.ID = m.ID
+	return nil
+}
+
+// UpdateApprovement implementation
+func (d *Database) UpdateApprovement(v *types.Approvement) error {
+	var m = &model.Approvement{}
+	if err := m.MapFrom(v); err != nil {
+		return err
+	}
+	return d.Save(m).Error
+}
+
+// SetApprovementConfirmed implementation
+func (d *Database) SetApprovementConfirmed(dig mint.Digest, from mint.PublicKey, block *big.Int) error {
+	return d.Model(&model.Approvement{}).
 		Where("`digest`=? AND `sender`=?", dig.Bytes(), from.Bytes()).
 		Update(
 			map[string]interface{}{
