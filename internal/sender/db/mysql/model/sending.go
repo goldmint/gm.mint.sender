@@ -5,9 +5,9 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/void616/gm-mint-sender/internal/sender/db/types"
-	sumuslib "github.com/void616/gm-sumuslib"
-	"github.com/void616/gm-sumuslib/amount"
+	"github.com/void616/gm.mint.sender/internal/sender/db/types"
+	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint/amount"
 )
 
 // Sending model
@@ -76,18 +76,18 @@ func (s *Sending) MapFrom(t *types.Sending) error {
 
 // MapTo mapping
 func (s *Sending) MapTo() (*types.Sending, error) {
-	var sender *sumuslib.PublicKey
-	var digest *sumuslib.Digest
+	var sender *mint.PublicKey
+	var digest *mint.Digest
 	var sentAtBlock *big.Int
 	var block *big.Int
 
-	to, err := sumuslib.BytesToPublicKey(s.To)
+	to, err := mint.BytesToPublicKey(s.To)
 	if err != nil {
 		return nil, fmt.Errorf("invalid to")
 	}
 
 	if len(s.Sender) > 0 {
-		v, err := sumuslib.BytesToPublicKey(s.Sender)
+		v, err := mint.BytesToPublicKey(s.Sender)
 		if err != nil {
 			return nil, fmt.Errorf("invalid sender")
 		}
@@ -95,7 +95,7 @@ func (s *Sending) MapTo() (*types.Sending, error) {
 	}
 
 	if len(s.Digest) > 0 {
-		v, err := sumuslib.BytesToDigest(s.Digest)
+		v, err := mint.BytesToDigest(s.Digest)
 		if err != nil {
 			return nil, fmt.Errorf("invalid digest")
 		}
@@ -121,7 +121,7 @@ func (s *Sending) MapTo() (*types.Sending, error) {
 		Status:        types.SendingStatus(s.Status),
 		To:            to,
 		Amount:        amo,
-		Token:         sumuslib.Token(s.Token),
+		Token:         mint.Token(s.Token),
 		Sender:        sender,
 		SenderNonce:   s.SenderNonce,
 		Digest:        digest,

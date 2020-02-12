@@ -5,9 +5,9 @@ import (
 	"time"
 
 	proto "github.com/golang/protobuf/proto"
-	senderNatsProto "github.com/void616/gm-mint-sender/pkg/sender/nats"
-	sumuslib "github.com/void616/gm-sumuslib"
-	"github.com/void616/gm-sumuslib/amount"
+	senderNatsProto "github.com/void616/gm.mint.sender/pkg/sender/nats"
+	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint/amount"
 )
 
 // PublishSentEvent sends a sending completion notification
@@ -15,10 +15,10 @@ func (n *Nats) PublishSentEvent(
 	success bool,
 	msgerr string,
 	service, requestID string,
-	to sumuslib.PublicKey,
-	token sumuslib.Token,
+	to mint.PublicKey,
+	token mint.Token,
 	amo *amount.Amount,
-	digest *sumuslib.Digest,
+	digest *mint.Digest,
 ) error {
 	// metrics
 	if n.metrics != nil {

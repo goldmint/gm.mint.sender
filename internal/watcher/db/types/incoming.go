@@ -4,19 +4,19 @@ import (
 	"math/big"
 	"time"
 
-	sumuslib "github.com/void616/gm-sumuslib"
-	"github.com/void616/gm-sumuslib/amount"
+	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint/amount"
 )
 
 // Incoming model
 type Incoming struct {
 	ID            uint64
 	Service       Service
-	To            sumuslib.PublicKey
-	From          sumuslib.PublicKey
+	To            mint.PublicKey
+	From          mint.PublicKey
 	Amount        *amount.Amount
-	Token         sumuslib.Token
-	Digest        sumuslib.Digest
+	Token         mint.Token
+	Digest        mint.Digest
 	Block         *big.Int
 	Timestamp     time.Time
 	FirstNotifyAt *time.Time

@@ -1,10 +1,11 @@
 package rpcpool
 
 import (
+	"context"
 	"time"
 
-	"github.com/void616/gm-sumusrpc/conn"
-	"github.com/void616/gm-sumusrpc/pool"
+	"github.com/void616/gm.mint.rpc/conn"
+	"github.com/void616/gm.mint.rpc/pool"
 )
 
 // Pool is Sumus RPC connection pool
@@ -27,11 +28,25 @@ func New(endpoints ...string) (*Pool, func(), error) {
 	}, nil
 }
 
-// Get gets free connection from pool. *pool.Conn should be released with Close()
-func (p *Pool) Get() (*pool.Conn, error) {
-	c, err := p.pool.Get(p.timeout)
+// Conn returns prepared context and unused connection
+func (p *Pool) Conn() (context.Context, *conn.Conn, func(), error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	con, cls, err := p.pool.Get(p.timeout)
 	if err != nil {
-		return nil, err
+		cancel()
+		return nil, nil, nil, err
 	}
-	return c, nil
+	return ctx, con, func() {
+		cancel()
+		cls()
+	}, nil
+}
+
+// ConnOnly returns only a free unused connection
+func (p *Pool) ConnOnly() (*conn.Conn, func(), error) {
+	con, cls, err := p.pool.Get(p.timeout)
+	if err != nil {
+		return nil, nil, err
+	}
+	return con, cls, nil
 }

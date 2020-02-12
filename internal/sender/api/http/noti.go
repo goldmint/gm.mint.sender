@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	sumuslib "github.com/void616/gm-sumuslib"
-	"github.com/void616/gm-sumuslib/amount"
+	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint/amount"
 )
 
 // PublishSentEvent sends a sending completion notification
@@ -16,10 +16,10 @@ func (h *HTTP) PublishSentEvent(
 	success bool,
 	msgerr string,
 	service, requestID, callbackURL string,
-	to sumuslib.PublicKey,
-	token sumuslib.Token,
+	to mint.PublicKey,
+	token mint.Token,
 	amo *amount.Amount,
-	digest *sumuslib.Digest,
+	digest *mint.Digest,
 ) error {
 	// metrics
 	if h.metrics != nil {

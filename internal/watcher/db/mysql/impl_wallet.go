@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/void616/gm-mint-sender/internal/watcher/db/mysql/model"
-	"github.com/void616/gm-mint-sender/internal/watcher/db/types"
-	sumuslib "github.com/void616/gm-sumuslib"
+	"github.com/void616/gm.mint.sender/internal/watcher/db/mysql/model"
+	"github.com/void616/gm.mint.sender/internal/watcher/db/types"
+	mint "github.com/void616/gm.mint"
 )
 
 // PutWallet implementation
@@ -54,7 +54,7 @@ func (d *Database) ListWallets() ([]*types.WalletServices, error) {
 	}
 	list := make([]*types.WalletServices, len(mlist))
 	for i, m := range mlist {
-		pub, err := sumuslib.BytesToPublicKey(m.PublicKey)
+		pub, err := mint.BytesToPublicKey(m.PublicKey)
 		if err != nil {
 			return nil, err
 		}

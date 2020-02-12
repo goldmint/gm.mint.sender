@@ -3,8 +3,8 @@ package mysql
 import (
 	"time"
 
-	"github.com/void616/gm-mint-sender/internal/watcher/db/mysql/model"
-	"github.com/void616/gm-mint-sender/internal/watcher/db/types"
+	"github.com/void616/gm.mint.sender/internal/watcher/db/mysql/model"
+	"github.com/void616/gm.mint.sender/internal/watcher/db/types"
 )
 
 // PutIncoming implementation

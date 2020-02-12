@@ -6,9 +6,9 @@ import (
 	gonats "github.com/nats-io/go-nats"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
-	senderNats "github.com/void616/gm-mint-sender/pkg/sender/nats"
-	sumuslib "github.com/void616/gm-sumuslib"
-	"github.com/void616/gm-sumuslib/amount"
+	senderNats "github.com/void616/gm.mint.sender/pkg/sender/nats"
+	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint/amount"
 	"github.com/void616/gotask"
 )
 
@@ -23,7 +23,7 @@ type Nats struct {
 
 // API provides ability to interact with service API
 type API interface {
-	EnqueueSendingNats(id, service string, to sumuslib.PublicKey, a *amount.Amount, t sumuslib.Token) (dup, success bool)
+	EnqueueSendingNats(id, service string, to mint.PublicKey, a *amount.Amount, t mint.Token) (dup, success bool)
 }
 
 // New instance
@@ -42,6 +42,7 @@ func New(
 	if err != nil {
 		return nil, nil, err
 	}
+
 	natsConnection.SetReconnectHandler(func(_ *gonats.Conn) {
 		logger.Warnf("Nats reconnected: %v", url)
 	})

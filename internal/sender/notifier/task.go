@@ -3,7 +3,7 @@ package notifier
 import (
 	"time"
 
-	"github.com/void616/gm-mint-sender/internal/sender/db/types"
+	"github.com/void616/gm.mint.sender/internal/sender/db/types"
 	"github.com/void616/gotask"
 )
 

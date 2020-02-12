@@ -4,9 +4,9 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/void616/gm-mint-sender/internal/sender/db/mysql/model"
-	"github.com/void616/gm-mint-sender/internal/sender/db/types"
-	sumuslib "github.com/void616/gm-sumuslib"
+	"github.com/void616/gm.mint.sender/internal/sender/db/mysql/model"
+	"github.com/void616/gm.mint.sender/internal/sender/db/types"
+	mint "github.com/void616/gm.mint"
 )
 
 // ListWallets implementation
@@ -115,7 +115,7 @@ func (d *Database) EarliestBlock() (*big.Int, bool, error) {
 }
 
 // LatestSenderNonce implementation
-func (d *Database) LatestSenderNonce(sender sumuslib.PublicKey) (uint64, error) {
+func (d *Database) LatestSenderNonce(sender mint.PublicKey) (uint64, error) {
 	m := struct {
 		Latest uint64
 	}{}

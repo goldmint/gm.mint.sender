@@ -3,9 +3,9 @@ package mysql
 import (
 	"math/big"
 
-	"github.com/void616/gm-mint-sender/internal/sender/db/mysql/model"
-	"github.com/void616/gm-mint-sender/internal/sender/db/types"
-	sumuslib "github.com/void616/gm-sumuslib"
+	"github.com/void616/gm.mint.sender/internal/sender/db/mysql/model"
+	"github.com/void616/gm.mint.sender/internal/sender/db/types"
+	mint "github.com/void616/gm.mint"
 )
 
 // PutWallet implementation
@@ -45,7 +45,7 @@ func (d *Database) UpdateSending(v *types.Sending) error {
 }
 
 // SetSendingConfirmed implementation
-func (d *Database) SetSendingConfirmed(dig sumuslib.Digest, from sumuslib.PublicKey, block *big.Int) error {
+func (d *Database) SetSendingConfirmed(dig mint.Digest, from mint.PublicKey, block *big.Int) error {
 	return d.Model(&model.Sending{}).
 		Where("`digest`=? AND `sender`=?", dig.Bytes(), from.Bytes()).
 		Update(

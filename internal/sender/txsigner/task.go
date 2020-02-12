@@ -1,12 +1,11 @@
 package txsigner
 
 import (
-	"fmt"
 	"math/big"
 	"time"
 
-	"github.com/void616/gm-mint-sender/internal/sender/db/types"
-	"github.com/void616/gm-sumusrpc/rpc"
+	"github.com/void616/gm.mint.sender/internal/sender/db/types"
+	"github.com/void616/gm.mint.rpc/request"
 	"github.com/void616/gotask"
 )
 
@@ -22,24 +21,26 @@ func (s *Signer) Task(token *gotask.Token) {
 
 		// get current network block
 		{
-			conn, err := s.pool.Get()
+			ctx, conn, cls, err := s.pool.Conn()
 			if err != nil {
 				s.logger.WithError(err).Error("Failed to get RPC connection")
 				token.Sleep(time.Second * 30)
 				continue
 			}
-			state, code, err := rpc.BlockchainState(conn.Conn())
-			if err != nil || code != rpc.ECSuccess {
-				conn.Close()
-				if code != rpc.ECSuccess {
-					err = fmt.Errorf("node code %v", code)
+
+			state, rerr, err := request.GetBlockchainState(ctx, conn)
+			if err != nil || rerr != nil {
+				cls()
+				if rerr != nil {
+					err = rerr.Err()
 				}
 				s.logger.WithError(err).Error("Failed to get current block ID")
 				token.Sleep(time.Second * 30)
 				continue
 			}
-			currentBlock.Sub(state.BlockCount, big.NewInt(1))
-			conn.Close()
+
+			currentBlock.Sub(state.BlockCount.Int, big.NewInt(1))
+			cls()
 		}
 
 		count := 0

@@ -2,40 +2,32 @@ package blockparser
 
 import (
 	"bytes"
-	"encoding/hex"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"math/big"
 
-	"github.com/void616/gm-sumusrpc/rpc"
+	"github.com/void616/gm.mint.rpc/request"
 )
 
 // queryBlockData queries block data via RPC connection
 func (p *Parser) queryBlockData(block *big.Int) (io.ReadCloser, error) {
 
 	// get connection
-	conn, err := p.rpcpool.Get()
+	ctx, conn, cls, err := p.rpcpool.Conn()
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close()
+	defer cls()
 
 	// get the block
-	blockString, code, err := rpc.BlockData(conn.Conn(), block)
-	if code != rpc.ECSuccess {
-		return nil, fmt.Errorf("node error code %v", code)
+	blockData, rerr, err := request.GetBlockByID(ctx, conn, block)
+	if rerr != nil {
+		return nil, rerr.Err()
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	// parse
-	blockBytes, err := hex.DecodeString(blockString)
-	if err != nil {
-		return nil, err
-	}
-	blockStream := bytes.NewBuffer(blockBytes)
-
+	blockStream := bytes.NewBuffer(blockData[:])
 	return ioutil.NopCloser(blockStream), nil
 }

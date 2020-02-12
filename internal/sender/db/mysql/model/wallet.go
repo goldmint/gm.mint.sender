@@ -3,8 +3,8 @@ package model
 import (
 	"fmt"
 
-	"github.com/void616/gm-mint-sender/internal/sender/db/types"
-	sumuslib "github.com/void616/gm-sumuslib"
+	"github.com/void616/gm.mint.sender/internal/sender/db/types"
+	mint "github.com/void616/gm.mint"
 )
 
 // Wallet model
@@ -20,7 +20,7 @@ func (w *Wallet) MapFrom(t *types.Wallet) error {
 
 // MapTo mapping
 func (w *Wallet) MapTo() (*types.Wallet, error) {
-	pub, err := sumuslib.BytesToPublicKey(w.PublicKey)
+	pub, err := mint.BytesToPublicKey(w.PublicKey)
 	if err != nil {
 		return nil, fmt.Errorf("invalid public key")
 	}

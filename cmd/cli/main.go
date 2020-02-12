@@ -12,10 +12,10 @@ import (
 	"github.com/fatih/color"
 	"github.com/golang/protobuf/proto"
 	gonats "github.com/nats-io/go-nats"
-	senderNats "github.com/void616/gm-mint-sender/pkg/sender/nats"
-	watcherNats "github.com/void616/gm-mint-sender/pkg/watcher/nats"
-	sumuslib "github.com/void616/gm-sumuslib"
-	"github.com/void616/gm-sumuslib/amount"
+	senderNats "github.com/void616/gm.mint.sender/pkg/sender/nats"
+	watcherNats "github.com/void616/gm.mint.sender/pkg/watcher/nats"
+	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint/amount"
 )
 
 var (
@@ -192,7 +192,7 @@ func natsSubscribeSendings() {
 			return
 		}
 		if reqModel.GetSuccess() {
-			event("Witdrawal #%v (%v %v to %v) completed, tag %v, tx %v", reqModel.GetId(), reqModel.GetAmount(), reqModel.GetToken(), sumuslib.MaskString6P4(reqModel.GetPublicKey()), reqModel.GetService(), reqModel.GetTransaction())
+			event("Witdrawal #%v (%v %v to %v) completed, tag %v, tx %v", reqModel.GetId(), reqModel.GetAmount(), reqModel.GetToken(), mint.MaskString6P4(reqModel.GetPublicKey()), reqModel.GetService(), reqModel.GetTransaction())
 		} else {
 			event("Witdrawal #%v failed, tag %v. Error: %v", reqModel.GetId(), reqModel.GetService(), reqModel.GetError())
 		}
@@ -229,7 +229,7 @@ func (c *cmdAddRemoveWallet) Parse(s string) error {
 	if _, err := fmt.Sscanf(s, "%s %s %s", &action, &c.pubkey, &c.tag); err != nil {
 		return err
 	}
-	if _, err := sumuslib.ParsePublicKey(c.pubkey); err != nil {
+	if _, err := mint.ParsePublicKey(c.pubkey); err != nil {
 		return err
 	}
 	c.add = action == "watch"
@@ -285,13 +285,13 @@ func (c *cmdSend) Parse(s string) error {
 	if _, err := fmt.Sscanf(s, "%s %s %s %s %s", &null, &c.amo, &c.token, &c.pubkey, &c.tag); err != nil {
 		return err
 	}
-	if _, err := sumuslib.ParseToken(c.token); err != nil {
+	if _, err := mint.ParseToken(c.token); err != nil {
 		return err
 	}
 	if _, err := amount.FromString(c.amo); err != nil {
 		return fmt.Errorf("failed to parse amount")
 	}
-	if _, err := sumuslib.ParsePublicKey(c.pubkey); err != nil {
+	if _, err := mint.ParsePublicKey(c.pubkey); err != nil {
 		return err
 	}
 	return nil

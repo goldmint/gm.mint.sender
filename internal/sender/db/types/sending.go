@@ -4,8 +4,8 @@ import (
 	"math/big"
 	"time"
 
-	sumuslib "github.com/void616/gm-sumuslib"
-	"github.com/void616/gm-sumuslib/amount"
+	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint/amount"
 )
 
 // Sending model
@@ -13,12 +13,12 @@ type Sending struct {
 	ID            uint64
 	Transport     SendingTransport
 	Status        SendingStatus
-	To            sumuslib.PublicKey
-	Token         sumuslib.Token
+	To            mint.PublicKey
+	Token         mint.Token
 	Amount        *amount.Amount
-	Sender        *sumuslib.PublicKey
+	Sender        *mint.PublicKey
 	SenderNonce   *uint64
-	Digest        *sumuslib.Digest
+	Digest        *mint.Digest
 	SentAtBlock   *big.Int
 	Block         *big.Int
 	Service       string

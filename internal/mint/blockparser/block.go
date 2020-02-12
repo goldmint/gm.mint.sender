@@ -5,11 +5,11 @@ import (
 	"io"
 	"math/big"
 
-	sumuslib "github.com/void616/gm-sumuslib"
-	"github.com/void616/gm-sumuslib/amount"
-	"github.com/void616/gm-sumuslib/block"
-	"github.com/void616/gm-sumuslib/serializer"
-	"github.com/void616/gm-sumuslib/transaction"
+	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint/amount"
+	"github.com/void616/gm.mint/block"
+	"github.com/void616/gm.mint/serializer"
+	"github.com/void616/gm.mint/transaction"
 )
 
 // Invoked when transaction-type-specific data should fill transaction model
@@ -22,12 +22,12 @@ func (p *Parser) parseBlockData(r io.Reader) error {
 		r,
 		// header parsed
 		func(h *block.Header) error {
-			signers := make([]sumuslib.PublicKey, 0)
+			signers := make([]mint.PublicKey, 0)
 			for _, s := range h.Signers {
 				signers = append(signers, s.PublicKey)
 			}
 			blockModel = &Block{
-				Block:             big.NewInt(0).Set(h.BlockNumber),
+				Block:             big.NewInt(0).Set(h.BlockID),
 				PrevDigest:        h.PrevBlockDigest,
 				MerkleRoot:        h.MerkleRoot,
 				TransactionsCount: h.TransactionsCount,
@@ -37,24 +37,24 @@ func (p *Parser) parseBlockData(r io.Reader) error {
 				FeeMNT:            amount.New(),
 				FeeGOLD:           amount.New(),
 				TotalUserData:     0,
-				Timestamp:         sumuslib.DateToStamp(h.Timestamp),
+				Timestamp:         mint.StampToTime(h.Timestamp),
 			}
 			return nil
 		},
 		// next transaction is ready to be parsed
-		func(t sumuslib.Transaction, d *serializer.Deserializer, h *block.Header) error {
+		func(t transaction.Code, d *serializer.Deserializer, h *block.Header) error {
 			switch t {
 
-			case sumuslib.TransactionRegisterNode:
+			case transaction.RegisterNodeTx:
 				tx := transaction.RegisterNode{}
 				return mkTX(
 					&tx, t, d, h, p.pubTX,
 					func(m *Transaction) {
-						m.Data = []byte(tx.NodeAddress)
+						m.Data = tx.NodeAddress.Bytes()
 					},
 				)
 
-			case sumuslib.TransactionUnregisterNode:
+			case transaction.UnregisterNodeTx:
 				tx := transaction.UnregisterNode{}
 				return mkTX(
 					&tx, t, d, h, p.pubTX,
@@ -63,7 +63,7 @@ func (p *Parser) parseBlockData(r io.Reader) error {
 					},
 				)
 
-			case sumuslib.TransactionTransferAssets:
+			case transaction.TransferAssetTx:
 				tx := transaction.TransferAsset{}
 				return mkTX(
 					&tx, t, d, h, p.pubTX,
@@ -71,11 +71,11 @@ func (p *Parser) parseBlockData(r io.Reader) error {
 						to := tx.Address
 						m.To = &to
 						switch tx.Token {
-						case sumuslib.TokenMNT:
+						case mint.TokenMNT:
 							m.AmountMNT = amount.FromAmount(tx.Amount)
 							// stat
 							blockModel.TotalMNT.Value.Add(blockModel.TotalMNT.Value, tx.Amount.Value)
-						case sumuslib.TokenGOLD:
+						case mint.TokenGOLD:
 							m.AmountGOLD = amount.FromAmount(tx.Amount)
 							// stat
 							blockModel.TotalGOLD.Value.Add(blockModel.TotalGOLD.Value, tx.Amount.Value)
@@ -83,8 +83,8 @@ func (p *Parser) parseBlockData(r io.Reader) error {
 					},
 				)
 
-			case sumuslib.TransactionRegisterSystemWallet:
-				tx := transaction.RegisterSysWallet{}
+			case transaction.SetWalletTagTx:
+				tx := transaction.SetWalletTag{}
 				return mkTX(
 					&tx, t, d, h, p.pubTX,
 					func(m *Transaction) {
@@ -94,8 +94,8 @@ func (p *Parser) parseBlockData(r io.Reader) error {
 					},
 				)
 
-			case sumuslib.TransactionUnregisterSystemWallet:
-				tx := transaction.UnregisterSysWallet{}
+			case transaction.UnsetWalletTagTx:
+				tx := transaction.UnsetWalletTag{}
 				return mkTX(
 					&tx, t, d, h, p.pubTX,
 					func(m *Transaction) {
@@ -105,7 +105,7 @@ func (p *Parser) parseBlockData(r io.Reader) error {
 					},
 				)
 
-			case sumuslib.TransactionUserData:
+			case transaction.UserDataTx:
 				tx := transaction.UserData{}
 				return mkTX(
 					&tx, t, d, h, p.pubTX,
@@ -116,7 +116,7 @@ func (p *Parser) parseBlockData(r io.Reader) error {
 					},
 				)
 
-			case sumuslib.TransactionDistributionFee:
+			case transaction.DistributionFeeTx:
 				tx := transaction.DistributionFee{}
 				return mkTX(
 					&tx, t, d, h, p.pubTX,
@@ -139,21 +139,21 @@ func (p *Parser) parseBlockData(r io.Reader) error {
 
 // ---
 
-func mkTX(itx transaction.ITransaction, typ sumuslib.Transaction, d *serializer.Deserializer, h *block.Header, pubTX chan<- *Transaction, fillCbk ptxCbk) error {
+func mkTX(itx transaction.Transactioner, typ transaction.Code, d *serializer.Deserializer, h *block.Header, pubTX chan<- *Transaction, fillCbk ptxCbk) error {
 	ptx, err := itx.Parse(d.Source())
 	if err != nil {
 		return err
 	}
 	m := Transaction{
 		Digest:     ptx.Digest,
-		Block:      big.NewInt(0).Set(h.BlockNumber),
+		Block:      big.NewInt(0).Set(h.BlockID),
 		Type:       typ,
 		Nonce:      ptx.Nonce,
 		From:       ptx.From,
 		To:         nil,
 		AmountMNT:  amount.New(),
 		AmountGOLD: amount.New(),
-		Timestamp:  sumuslib.DateToStamp(h.Timestamp),
+		Timestamp:  mint.StampToTime(h.Timestamp),
 		Data:       nil,
 	}
 	fillCbk(&m)

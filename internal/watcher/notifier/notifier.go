@@ -2,9 +2,9 @@ package notifier
 
 import (
 	"github.com/sirupsen/logrus"
-	"github.com/void616/gm-mint-sender/internal/watcher/db"
-	sumuslib "github.com/void616/gm-sumuslib"
-	"github.com/void616/gm-sumuslib/amount"
+	"github.com/void616/gm.mint.sender/internal/watcher/db"
+	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint/amount"
 )
 
 const itemsPerShot = 50
@@ -19,12 +19,12 @@ type Notifier struct {
 
 // NatsTransporter delivers notifications or fail with an error
 type NatsTransporter interface {
-	NotifyRefilling(service string, to, from sumuslib.PublicKey, t sumuslib.Token, a *amount.Amount, tx sumuslib.Digest) error
+	NotifyRefilling(service string, to, from mint.PublicKey, t mint.Token, a *amount.Amount, tx mint.Digest) error
 }
 
 // HTTPTransporter delivers notifications or fail with an error
 type HTTPTransporter interface {
-	NotifyRefilling(url, service string, to, from sumuslib.PublicKey, t sumuslib.Token, a *amount.Amount, tx sumuslib.Digest) error
+	NotifyRefilling(url, service string, to, from mint.PublicKey, t mint.Token, a *amount.Amount, tx mint.Digest) error
 }
 
 // New Notifier instance

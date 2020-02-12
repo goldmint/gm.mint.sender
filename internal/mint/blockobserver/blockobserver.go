@@ -4,8 +4,8 @@ import (
 	"math/big"
 
 	"github.com/sirupsen/logrus"
-	"github.com/void616/gm-mint-sender/internal/mint/blockparser"
-	"github.com/void616/gm-mint-sender/internal/mint/rpcpool"
+	"github.com/void616/gm.mint.sender/internal/mint/blockparser"
+	"github.com/void616/gm.mint.sender/internal/mint/rpcpool"
 )
 
 // Observer listens for fresh blocks on an RPC connection

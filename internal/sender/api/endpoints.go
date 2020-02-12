@@ -1,13 +1,13 @@
 package api
 
 import (
-	"github.com/void616/gm-mint-sender/internal/sender/db/types"
-	sumuslib "github.com/void616/gm-sumuslib"
-	"github.com/void616/gm-sumuslib/amount"
+	"github.com/void616/gm.mint.sender/internal/sender/db/types"
+	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint/amount"
 )
 
 // EnqueueSendingNats adds a sending to the sender queue
-func (a *API) EnqueueSendingNats(id, service string, to sumuslib.PublicKey, amo *amount.Amount, token sumuslib.Token) (dup, success bool) {
+func (a *API) EnqueueSendingNats(id, service string, to mint.PublicKey, amo *amount.Amount, token mint.Token) (dup, success bool) {
 	snd := &types.Sending{
 		Transport: types.SendingNats,
 		Status:    types.SendingEnqueued,
@@ -29,7 +29,7 @@ func (a *API) EnqueueSendingNats(id, service string, to sumuslib.PublicKey, amo 
 }
 
 // EnqueueSendingHTTP adds a sending to the sender queue
-func (a *API) EnqueueSendingHTTP(id, service, callback string, to sumuslib.PublicKey, amo *amount.Amount, token sumuslib.Token) (dup, success bool) {
+func (a *API) EnqueueSendingHTTP(id, service, callback string, to mint.PublicKey, amo *amount.Amount, token mint.Token) (dup, success bool) {
 	snd := &types.Sending{
 		Transport:   types.SendingHTTP,
 		Status:      types.SendingEnqueued,

@@ -5,9 +5,9 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/void616/gm-mint-sender/internal/watcher/db/types"
-	sumuslib "github.com/void616/gm-sumuslib"
-	"github.com/void616/gm-sumuslib/amount"
+	"github.com/void616/gm.mint.sender/internal/watcher/db/types"
+	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint/amount"
 )
 
 // Incoming model
@@ -54,11 +54,11 @@ func (i *Incoming) MapTo() (*types.Incoming, error) {
 	if err != nil {
 		return nil, err
 	}
-	to, err := sumuslib.BytesToPublicKey(i.To)
+	to, err := mint.BytesToPublicKey(i.To)
 	if err != nil {
 		return nil, fmt.Errorf("invalid to")
 	}
-	from, err := sumuslib.BytesToPublicKey(i.From)
+	from, err := mint.BytesToPublicKey(i.From)
 	if err != nil {
 		return nil, fmt.Errorf("invalid from")
 	}
@@ -66,7 +66,7 @@ func (i *Incoming) MapTo() (*types.Incoming, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid amount")
 	}
-	digest, err := sumuslib.BytesToDigest(i.Digest)
+	digest, err := mint.BytesToDigest(i.Digest)
 	if err != nil {
 		return nil, fmt.Errorf("invalid digest")
 	}
@@ -78,7 +78,7 @@ func (i *Incoming) MapTo() (*types.Incoming, error) {
 		To:            to,
 		From:          from,
 		Amount:        amo,
-		Token:         sumuslib.Token(i.Token),
+		Token:         mint.Token(i.Token),
 		Digest:        digest,
 		Block:         block,
 		Timestamp:     i.Timestamp,

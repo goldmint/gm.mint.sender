@@ -4,9 +4,9 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/void616/gm-mint-sender/internal/watcher/db/types"
-	sumuslib "github.com/void616/gm-sumuslib"
-	"github.com/void616/gm-sumuslib/amount"
+	"github.com/void616/gm.mint.sender/internal/watcher/db/types"
+	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint/amount"
 	"github.com/void616/gotask"
 )
 
@@ -29,7 +29,7 @@ func (s *Saver) Task(token *gotask.Token) {
 			// save next filtered transaction
 			case tx := <-s.transactions:
 				// asset transaction
-				if tx.Type != sumuslib.TransactionTransferAssets {
+				if tx.Type != mint.TransactionTransferAssets {
 					break
 				}
 
@@ -39,14 +39,14 @@ func (s *Saver) Task(token *gotask.Token) {
 				}
 
 				// some coins are transferred
-				var tkn sumuslib.Token
+				var tkn mint.Token
 				var amo *amount.Amount
 				switch {
 				case tx.AmountMNT.Value.Cmp(zero) > 0:
-					tkn = sumuslib.TokenMNT
+					tkn = mint.TokenMNT
 					amo = amount.FromAmount(tx.AmountMNT)
 				case tx.AmountGOLD.Value.Cmp(zero) > 0:
-					tkn = sumuslib.TokenGOLD
+					tkn = mint.TokenGOLD
 					amo = amount.FromAmount(tx.AmountGOLD)
 				}
 				if amo == nil {

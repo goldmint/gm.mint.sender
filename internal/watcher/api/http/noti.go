@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"time"
 
-	sumuslib "github.com/void616/gm-sumuslib"
-	"github.com/void616/gm-sumuslib/amount"
+	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint/amount"
 )
 
 // NotifyRefilling sends a notification
-func (h *HTTP) NotifyRefilling(url, service string, to, from sumuslib.PublicKey, t sumuslib.Token, a *amount.Amount, d sumuslib.Digest) error {
+func (h *HTTP) NotifyRefilling(url, service string, to, from mint.PublicKey, t mint.Token, a *amount.Amount, d mint.Digest) error {
 	// metrics
 	if h.metrics != nil {
 		defer func(t time.Time) {

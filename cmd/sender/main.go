@@ -15,25 +15,25 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
-	"github.com/void616/gm-mint-sender/internal/metrics"
-	"github.com/void616/gm-mint-sender/internal/mint/blockobserver"
-	"github.com/void616/gm-mint-sender/internal/mint/blockparser"
-	"github.com/void616/gm-mint-sender/internal/mint/blockranger"
-	"github.com/void616/gm-mint-sender/internal/mint/rpcpool"
-	"github.com/void616/gm-mint-sender/internal/mint/txfilter"
-	serviceAPI "github.com/void616/gm-mint-sender/internal/sender/api"
-	serviceHTTP "github.com/void616/gm-mint-sender/internal/sender/api/http"
-	serviceNats "github.com/void616/gm-mint-sender/internal/sender/api/nats"
-	"github.com/void616/gm-mint-sender/internal/sender/db"
-	"github.com/void616/gm-mint-sender/internal/sender/db/mysql"
-	"github.com/void616/gm-mint-sender/internal/sender/db/types"
-	"github.com/void616/gm-mint-sender/internal/sender/notifier"
-	"github.com/void616/gm-mint-sender/internal/sender/txconfirmer"
-	"github.com/void616/gm-mint-sender/internal/sender/txsigner"
-	"github.com/void616/gm-mint-sender/internal/version"
-	sumuslib "github.com/void616/gm-sumuslib"
-	"github.com/void616/gm-sumuslib/signer"
-	"github.com/void616/gm-sumusrpc/rpc"
+	"github.com/void616/gm.mint.sender/internal/metrics"
+	"github.com/void616/gm.mint.sender/internal/mint/blockobserver"
+	"github.com/void616/gm.mint.sender/internal/mint/blockparser"
+	"github.com/void616/gm.mint.sender/internal/mint/blockranger"
+	"github.com/void616/gm.mint.sender/internal/mint/rpcpool"
+	"github.com/void616/gm.mint.sender/internal/mint/txfilter"
+	serviceAPI "github.com/void616/gm.mint.sender/internal/sender/api"
+	serviceHTTP "github.com/void616/gm.mint.sender/internal/sender/api/http"
+	serviceNats "github.com/void616/gm.mint.sender/internal/sender/api/nats"
+	"github.com/void616/gm.mint.sender/internal/sender/db"
+	"github.com/void616/gm.mint.sender/internal/sender/db/mysql"
+	"github.com/void616/gm.mint.sender/internal/sender/db/types"
+	"github.com/void616/gm.mint.sender/internal/sender/notifier"
+	"github.com/void616/gm.mint.sender/internal/sender/txconfirmer"
+	"github.com/void616/gm.mint.sender/internal/sender/txsigner"
+	"github.com/void616/gm.mint.sender/internal/version"
+	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint.rpc/rpc"
+	"github.com/void616/gm.mint/signer"
 	"github.com/void616/gotask"
 	"gopkg.in/yaml.v2"
 )
@@ -118,7 +118,7 @@ func main() {
 	var senderSigners []*signer.Signer
 	{
 		for i, k := range conf.Wallets {
-			b, err := sumuslib.Unpack58(k)
+			b, err := mint.Unpack58(k)
 			if err != nil {
 				logger.WithError(err).Fatalf("Invalid sender private key at index %v", i)
 			}
@@ -240,7 +240,7 @@ func main() {
 	defer close(filteredTX)
 
 	// carries public keys of wallets to add/remove from transactions filter
-	walletToTrack, walletToUntrack := make(chan sumuslib.PublicKey, 32), make(chan sumuslib.PublicKey, 32)
+	walletToTrack, walletToUntrack := make(chan mint.PublicKey, 32), make(chan mint.PublicKey, 32)
 	defer close(walletToTrack)
 	defer close(walletToUntrack)
 
@@ -287,8 +287,8 @@ func main() {
 	var txFilter *txfilter.Filter
 	{
 		// type/direction filter
-		filter := func(typ sumuslib.Transaction, outgoing bool) bool {
-			return typ == sumuslib.TransactionTransferAssets && outgoing
+		filter := func(typ mint.Transaction, outgoing bool) bool {
+			return typ == mint.TransactionTransferAssets && outgoing
 		}
 
 		f, err := txfilter.New(

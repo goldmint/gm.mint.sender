@@ -2,40 +2,62 @@ package blockobserver
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"math/big"
+
+	"github.com/void616/gm.mint.rpc/rpc"
 )
 
-// parseNewBlockEvent parses Sumus RPC event and returns the latest available block ID.
-// `id` is nil in case of unexpected event.
-func parseNewBlockEvent(msg []byte) (id *big.Int, err error) {
-	id = nil
-	err = nil
+// Parse latest blockchain block ID from node notification
+func (o *Observer) parseEvent(evt *rpc.Event) (latest *big.Int, err error) {
+	latest, err = nil, nil
 
-	model := struct {
-		ID          string `json:"id,omitempty"`
-		BlocksCount string `json:"block_count,omitempty"`
-		LastBlockID string `json:"last_block_id,omitempty"`
-	}{}
-	if err = json.Unmarshal(msg, &model); err != nil {
-		return
+	type Noti struct {
+		Count      string `json:"count,omitempty"`
+		LastID     string `json:"last_id,omitempty"`
+		LastDigest string `json:"last_digest,omitempty"`
 	}
 
-	// ensure event ID
-	if model.ID != "new-blocks-synchronized" {
+	not := &Noti{}
+	if err = json.Unmarshal(evt.Params, not); err != nil {
 		return
 	}
-	// valid block ID
-	if model.LastBlockID == "" {
-		err = errors.New("Last block ID is empty")
+
+	if not.LastID == "" {
+		err = fmt.Errorf("empty string for block number")
 		return
 	}
-	// parse ID
-	x, ok := big.NewInt(0).SetString(model.LastBlockID, 10)
+
+	x, ok := big.NewInt(0).SetString(not.LastID, 10)
 	if !ok {
-		err = errors.New("Failed to parse last block ID")
+		err = fmt.Errorf("failed to parse block id: %v", not.LastID)
 		return
 	}
-	id = x
+
+	latest = x
 	return
 }
+
+// // Get node blocks count via RPC request
+// func (o *Orchestrator) getNodeBlocksCount() (latest *big.Int, err error) {
+// 	latest = nil
+// 	err = nil
+
+// 	ctx, conn, cls, err := o.pool.Conn()
+// 	if err != nil {
+// 		return
+// 	}
+// 	defer cls()
+
+// 	state, rerr, err := request.GetBlockchainState(ctx, conn)
+// 	if err != nil {
+// 		return
+// 	}
+// 	if rerr != nil {
+// 		err = rerr.Err()
+// 		return
+// 	}
+
+// 	latest = new(big.Int).Set(state.BlockCount.Int)
+// 	return
+// }

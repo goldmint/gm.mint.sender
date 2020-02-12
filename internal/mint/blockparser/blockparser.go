@@ -4,7 +4,7 @@ import (
 	"math/big"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/void616/gm-mint-sender/internal/mint/rpcpool"
+	"github.com/void616/gm.mint.sender/internal/mint/rpcpool"
 )
 
 // Parser parses specific block data on demand and extracts transactions

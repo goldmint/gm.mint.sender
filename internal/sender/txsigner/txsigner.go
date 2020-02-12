@@ -1,17 +1,16 @@
 package txsigner
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
-	"github.com/void616/gm-mint-sender/internal/mint/rpcpool"
-	"github.com/void616/gm-mint-sender/internal/sender/db"
-	sumuslib "github.com/void616/gm-sumuslib"
-	"github.com/void616/gm-sumuslib/amount"
-	sumusSigner "github.com/void616/gm-sumuslib/signer"
-	"github.com/void616/gm-sumusrpc/rpc"
+	"github.com/void616/gm.mint.sender/internal/mint/rpcpool"
+	"github.com/void616/gm.mint.sender/internal/sender/db"
+	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint.rpc/request"
+	"github.com/void616/gm.mint/amount"
+	sumusSigner "github.com/void616/gm.mint/signer"
 )
 
 const itemsPerShot = 50
@@ -21,7 +20,7 @@ const staleAfterBlocks = 1
 type Signer struct {
 	logger  *logrus.Entry
 	pool    *rpcpool.Pool
-	signers map[sumuslib.PublicKey]*SignerData
+	signers map[mint.PublicKey]*SignerData
 	dao     db.DAO
 	metrics *Metrics
 }
@@ -29,7 +28,7 @@ type Signer struct {
 // SignerData describes particular signer
 type SignerData struct {
 	signer      *sumusSigner.Signer
-	public      sumuslib.PublicKey
+	public      mint.PublicKey
 	nonce       uint64
 	gold        *amount.Amount
 	mnt         *amount.Amount
@@ -47,28 +46,28 @@ func New(
 ) (*Signer, error) {
 
 	// get rpc connection
-	conn, err := pool.Get()
+	ctx, conn, cls, err := pool.Conn()
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close()
+	defer cls()
 
 	// make a map of signers with some extra data required in runtime
-	signerz := make(map[sumuslib.PublicKey]*SignerData)
+	signerz := make(map[mint.PublicKey]*SignerData)
 	for _, ss := range signers {
 		pubkey := ss.PublicKey()
 
 		// get wallet state from the network
-		walletState, code, err := rpc.WalletState(conn.Conn(), pubkey.String())
+		walletState, rerr, err := request.GetWalletState(ctx, conn, pubkey)
 		if err != nil {
 			return nil, err
 		}
-		if code != rpc.ECSuccess {
-			return nil, fmt.Errorf("node code %v", code)
+		if rerr != nil {
+			return nil, rerr.Err()
 		}
 		emitter := false
 		for _, t := range walletState.Tags {
-			if t == sumuslib.WalletTagEmission.String() {
+			if t == mint.WalletTagEmission.String() {
 				emitter = true
 				break
 			}
@@ -81,7 +80,7 @@ func New(
 		}
 
 		// use the greatest
-		nonce := walletState.ApprovedNonce
+		nonce := walletState.LastTransactionID
 		if dbnonce > nonce {
 			nonce = dbnonce
 		}
@@ -102,7 +101,7 @@ func New(
 			logGold, logMnt = "emitter", "emitter"
 		}
 		logger.
-			WithField("net_nonce", walletState.ApprovedNonce).
+			WithField("net_nonce", walletState.LastTransactionID).
 			WithField("db_nonce", dbnonce).
 			WithField("gold", logGold).
 			WithField("mnt", logMnt).

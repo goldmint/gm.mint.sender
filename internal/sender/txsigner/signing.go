@@ -1,25 +1,24 @@
 package txsigner
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
 	"sort"
 
-	"github.com/void616/gm-mint-sender/internal/sender/db/types"
-	sumuslib "github.com/void616/gm-sumuslib"
-	"github.com/void616/gm-sumuslib/amount"
-	"github.com/void616/gm-sumuslib/fee"
-	"github.com/void616/gm-sumuslib/transaction"
-	"github.com/void616/gm-sumusrpc/rpc"
+	"github.com/void616/gm.mint.sender/internal/sender/db/types"
+	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint.rpc/request"
+	"github.com/void616/gm.mint/amount"
+	"github.com/void616/gm.mint/fee"
+	"github.com/void616/gm.mint/transaction"
 )
 
 // processRequest signs and posts transaction
 func (s *Signer) processRequest(snd *types.Sending, currentBlock *big.Int) (posted bool) {
 	posted = false
 
-	var sigpub sumuslib.PublicKey
+	var sigpub mint.PublicKey
 	var freshNonce bool
 
 	logger := s.logger.WithField("id", snd.ID)
@@ -59,7 +58,7 @@ func (s *Signer) processRequest(snd *types.Sending, currentBlock *big.Int) (post
 		Token:   snd.Token,
 		Amount:  snd.Amount,
 	}
-	stx, err := tatx.Construct(signer.signer, nonce)
+	stx, err := tatx.Sign(signer.signer, nonce)
 	if err != nil {
 		logger.WithError(err).Errorln("Failed to sign transaction")
 		return false
@@ -75,10 +74,10 @@ func (s *Signer) processRequest(snd *types.Sending, currentBlock *big.Int) (post
 				if posted {
 					sub := amount.FromAmount(snd.Amount)
 					switch snd.Token {
-					case sumuslib.TokenGOLD:
+					case mint.TokenGOLD:
 						sub.Value.Add(sub.Value, fee.GoldFee(sub, signer.mnt).Value)
 						signer.gold.Value.Sub(signer.gold.Value, sub.Value)
-					case sumuslib.TokenMNT:
+					case mint.TokenMNT:
 						sub.Value.Add(sub.Value, fee.MntFee(sub).Value)
 						signer.mnt.Value.Sub(signer.mnt.Value, sub.Value)
 					}
@@ -94,20 +93,20 @@ func (s *Signer) processRequest(snd *types.Sending, currentBlock *big.Int) (post
 	}
 
 	// get free connection
-	conn, err := s.pool.Get()
+	ctx, conn, cls, err := s.pool.Conn()
 	if err != nil {
 		logger.WithError(err).Errorln("Failed to get free RPC connection")
 		return false
 	}
-	defer conn.Close()
+	defer cls()
 
 	// save as posted
 	snd.Status = types.SendingPosted
-	snd.Sender = &sumuslib.PublicKey{}
+	snd.Sender = &mint.PublicKey{}
 	*snd.Sender = signer.public
 	snd.SenderNonce = new(uint64)
 	*snd.SenderNonce = nonce
-	snd.Digest = &sumuslib.Digest{}
+	snd.Digest = &mint.Digest{}
 	*snd.Digest = stx.Digest
 	snd.SentAtBlock = new(big.Int).Set(currentBlock)
 	if err := s.dao.UpdateSending(snd); err != nil {
@@ -129,29 +128,33 @@ func (s *Signer) processRequest(snd *types.Sending, currentBlock *big.Int) (post
 	logger.Debugln("Sending transaction")
 
 	// post
-	_, code, err := rpc.AddTransaction(conn.Conn(), sumuslib.TransactionTransferAssets, hex.EncodeToString(stx.Data))
+	_, rerr, err := request.AddTransaction(ctx, conn, transaction.TransferAssetTx, stx.Data)
 	if err != nil {
 		logger.WithError(err).Errorln("Sending failed")
 		// don't reject, probably tx is posted
 		return false
 	}
 
-	logger.WithField("node_code", fmt.Sprint(uint16(code)))
+	if rerr != nil {
+		ncode, _, ok := rerr.GetReason()
+		if !ok {
+			logger.WithError(err).Errorln("Sending failed")
+			// don't reject, probably tx is posted
+			return false
+		}
 
-	if code != rpc.ECSuccess {
-		atec := rpc.AddTransactionErrorCode(code)
 		switch {
-		case atec.AddedAlready():
+		case ncode.TxAddedAlready():
 			// just ok
-		case atec.WalletInconsistency():
+		case ncode.TxWalletNotReady():
 			logger.Errorln("Node replied with: wallet not ready")
 			// fresh or repeated tx, doesn't matter, it's failed
 			reject = true
 			return false
-		case atec.NonceAhead():
+		case ncode.TxNonceAhead():
 			logger.Errorln("Node replied with: nonce ahead")
 			// not matter, keep posting it
-		case atec.NonceBehind():
+		case ncode.TxNonceBehind():
 			logger.Errorln("Node replied with: nonce behind (duplicate)")
 			// reject it in case it's a fresh tx
 			if freshNonce {
@@ -167,9 +170,9 @@ func (s *Signer) processRequest(snd *types.Sending, currentBlock *big.Int) (post
 }
 
 // pickSigner picks appropriate signer
-func (s *Signer) pickSigner(a *amount.Amount, t sumuslib.Token) (sumuslib.PublicKey, error) {
+func (s *Signer) pickSigner(a *amount.Amount, t mint.Token) (mint.PublicKey, error) {
 
-	sorted := make([]sumuslib.PublicKey, 0)
+	sorted := make([]mint.PublicKey, 0)
 	for _, v := range s.signers {
 		sorted = append(sorted, v.public)
 	}
@@ -192,12 +195,12 @@ func (s *Signer) pickSigner(a *amount.Amount, t sumuslib.Token) (sumuslib.Public
 
 		send := amount.FromAmount(a)
 		switch t {
-		case sumuslib.TokenGOLD:
+		case mint.TokenGOLD:
 			send.Value.Add(send.Value, fee.GoldFee(send, v.mnt).Value)
 			if v.gold.Value.Cmp(send.Value) >= 0 {
 				return v.public, nil
 			}
-		case sumuslib.TokenMNT:
+		case mint.TokenMNT:
 			send.Value.Add(send.Value, fee.MntFee(send).Value)
 			if v.mnt.Value.Cmp(send.Value) >= 0 {
 				return v.public, nil
@@ -205,5 +208,5 @@ func (s *Signer) pickSigner(a *amount.Amount, t sumuslib.Token) (sumuslib.Public
 		}
 	}
 
-	return sumuslib.PublicKey{}, errors.New("all failed or not enough token")
+	return mint.PublicKey{}, errors.New("all failed or not enough token")
 }

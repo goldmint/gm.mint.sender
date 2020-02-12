@@ -4,13 +4,13 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/void616/gm-mint-sender/internal/sender/api/model"
+	"github.com/void616/gm.mint.sender/internal/sender/api/model"
 
 	proto "github.com/golang/protobuf/proto"
 	gonats "github.com/nats-io/go-nats"
-	senderNats "github.com/void616/gm-mint-sender/pkg/sender/nats"
-	sumuslib "github.com/void616/gm-sumuslib"
-	"github.com/void616/gm-sumuslib/amount"
+	senderNats "github.com/void616/gm.mint.sender/pkg/sender/nats"
+	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint/amount"
 )
 
 // subSendRequest listens for a new sending requests until connection draining
@@ -62,14 +62,14 @@ func (n *Nats) subSendRequest(m *gonats.Msg) {
 	}
 
 	// parse wallet address
-	reqAddr, err := sumuslib.ParsePublicKey(req.GetPublicKey())
+	reqAddr, err := mint.ParsePublicKey(req.GetPublicKey())
 	if err != nil {
 		replyError = "Invalid public key"
 		return
 	}
 
 	// parse token
-	reqToken, err := sumuslib.ParseToken(req.GetToken())
+	reqToken, err := mint.ParseToken(req.GetToken())
 	if err != nil {
 		replyError = "Invalid token"
 		return

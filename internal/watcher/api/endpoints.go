@@ -1,13 +1,13 @@
 package api
 
 import (
-	"github.com/void616/gm-mint-sender/internal/watcher/api/model"
-	"github.com/void616/gm-mint-sender/internal/watcher/db/types"
-	sumuslib "github.com/void616/gm-sumuslib"
+	"github.com/void616/gm.mint.sender/internal/watcher/api/model"
+	"github.com/void616/gm.mint.sender/internal/watcher/db/types"
+	mint "github.com/void616/gm.mint"
 )
 
 // AddWallet adds wallet to the DB and sends it to the transaction filter
-func (api *API) AddWallet(svc string, trans types.ServiceTransport, svcURL string, pub ...sumuslib.PublicKey) bool {
+func (api *API) AddWallet(svc string, trans types.ServiceTransport, svcURL string, pub ...mint.PublicKey) bool {
 
 	if err := api.dao.PutService(&types.Service{
 		Name:        svc,
@@ -52,7 +52,7 @@ func (api *API) AddWallet(svc string, trans types.ServiceTransport, svcURL strin
 }
 
 // RemoveWallet removes wallet from the DB and from the transaction filter
-func (api *API) RemoveWallet(svc string, pub ...sumuslib.PublicKey) bool {
+func (api *API) RemoveWallet(svc string, pub ...mint.PublicKey) bool {
 
 	service, err := api.dao.GetService(svc)
 	if err != nil {

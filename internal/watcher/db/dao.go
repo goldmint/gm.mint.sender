@@ -1,7 +1,7 @@
 package db
 
 import (
-	"github.com/void616/gm-mint-sender/internal/watcher/db/types"
+	"github.com/void616/gm.mint.sender/internal/watcher/db/types"
 )
 
 // DAO is a DB interface

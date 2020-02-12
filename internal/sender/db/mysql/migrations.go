@@ -2,7 +2,7 @@ package mysql
 
 import (
 	"github.com/jinzhu/gorm"
-	"github.com/void616/gm-mint-sender/internal/sender/db/mysql/model"
+	"github.com/void616/gm.mint.sender/internal/sender/db/mysql/model"
 	gormigrate "gopkg.in/gormigrate.v1"
 )
 

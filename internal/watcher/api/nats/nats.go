@@ -6,9 +6,9 @@ import (
 	gonats "github.com/nats-io/go-nats"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
-	"github.com/void616/gm-mint-sender/internal/watcher/db/types"
-	walletNats "github.com/void616/gm-mint-sender/pkg/watcher/nats"
-	sumuslib "github.com/void616/gm-sumuslib"
+	"github.com/void616/gm.mint.sender/internal/watcher/db/types"
+	walletNats "github.com/void616/gm.mint.sender/pkg/watcher/nats"
+	mint "github.com/void616/gm.mint"
 	"github.com/void616/gotask"
 )
 
@@ -23,8 +23,8 @@ type Nats struct {
 
 // API provides API methods
 type API interface {
-	AddWallet(service string, serviceTrans types.ServiceTransport, serviceCallbackURL string, p ...sumuslib.PublicKey) bool
-	RemoveWallet(service string, p ...sumuslib.PublicKey) bool
+	AddWallet(service string, serviceTrans types.ServiceTransport, serviceCallbackURL string, p ...mint.PublicKey) bool
+	RemoveWallet(service string, p ...mint.PublicKey) bool
 }
 
 // New instance

@@ -3,7 +3,7 @@ package txfilter
 import (
 	"time"
 
-	"github.com/void616/gm-mint-sender/internal/mint/blockparser"
+	"github.com/void616/gm.mint.sender/internal/mint/blockparser"
 	"github.com/void616/gotask"
 )
 

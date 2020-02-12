@@ -4,10 +4,10 @@ import (
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
-
 	"github.com/sirupsen/logrus"
-	"github.com/void616/gm-mint-sender/internal/mint/blockparser"
-	sumuslib "github.com/void616/gm-sumuslib"
+	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint.sender/internal/mint/blockparser"
+	"github.com/void616/gm.mint/transaction"
 )
 
 const filterBufferSize = 64
@@ -17,16 +17,16 @@ type Filter struct {
 	logger     *logrus.Entry
 	in         <-chan *blockparser.Transaction
 	out        chan<- *blockparser.Transaction
-	add        <-chan sumuslib.PublicKey
-	remove     <-chan sumuslib.PublicKey
+	add        <-chan mint.PublicKey
+	remove     <-chan mint.PublicKey
 	roiLock    sync.Mutex
-	roiWallets map[sumuslib.PublicKey]struct{}
+	roiWallets map[mint.PublicKey]struct{}
 	txFilter   TxFilter
 	metrics    *Metrics
 }
 
 // TxFilter filters transaction
-type TxFilter func(typ sumuslib.Transaction, outgoing bool) bool
+type TxFilter func(typ transaction.Code, outgoing bool) bool
 
 // New Filter instance.
 // `in` channel receives transactions. `out` channel emits filtered transactions.
@@ -35,8 +35,8 @@ type TxFilter func(typ sumuslib.Transaction, outgoing bool) bool
 func New(
 	in <-chan *blockparser.Transaction,
 	out chan<- *blockparser.Transaction,
-	add <-chan sumuslib.PublicKey,
-	remove <-chan sumuslib.PublicKey,
+	add <-chan mint.PublicKey,
+	remove <-chan mint.PublicKey,
 	txFilter TxFilter,
 	logger *logrus.Entry,
 ) (*Filter, error) {
@@ -46,14 +46,14 @@ func New(
 		out:        out,
 		add:        add,
 		remove:     remove,
-		roiWallets: make(map[sumuslib.PublicKey]struct{}),
+		roiWallets: make(map[mint.PublicKey]struct{}),
 		txFilter:   txFilter,
 	}
 	return f, nil
 }
 
 // AddWallet adds a wallet to the ROI and should be called before service launch
-func (f *Filter) AddWallet(pubkey ...sumuslib.PublicKey) {
+func (f *Filter) AddWallet(pubkey ...mint.PublicKey) {
 	f.roiLock.Lock()
 	defer f.roiLock.Unlock()
 	for _, p := range pubkey {

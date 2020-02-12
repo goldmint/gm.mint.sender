@@ -1,7 +1,7 @@
 package model
 
 import (
-	"github.com/void616/gm-mint-sender/internal/watcher/db/types"
+	"github.com/void616/gm.mint.sender/internal/watcher/db/types"
 )
 
 // Service model

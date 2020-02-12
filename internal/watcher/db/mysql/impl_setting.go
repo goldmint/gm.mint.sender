@@ -1,7 +1,7 @@
 package mysql
 
 import (
-	"github.com/void616/gm-mint-sender/internal/watcher/db/mysql/model"
+	"github.com/void616/gm.mint.sender/internal/watcher/db/mysql/model"
 )
 
 // PutSetting implementation

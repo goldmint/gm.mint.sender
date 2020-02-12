@@ -2,7 +2,7 @@
 TARGETS = watcher/linux/amd64/ sender/linux/amd64/
 
 VERSION = $(shell ./scripts/version.sh)
-export BUILD_PACKAGE = github.com/void616/gm-mint-sender
+export BUILD_PACKAGE = github.com/void616/gm.mint.sender
 export BUILD_VERSION = $(BUILD_PACKAGE)/internal/version.version=$(VERSION)
 export BUILD_TAGS =
 

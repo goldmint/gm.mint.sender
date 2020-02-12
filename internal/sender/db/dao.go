@@ -3,8 +3,8 @@ package db
 import (
 	"math/big"
 
-	"github.com/void616/gm-mint-sender/internal/sender/db/types"
-	sumuslib "github.com/void616/gm-sumuslib"
+	"github.com/void616/gm.mint.sender/internal/sender/db/types"
+	mint "github.com/void616/gm.mint"
 )
 
 // DAO is a DB interface
@@ -30,10 +30,10 @@ type DAO interface {
 	// UpdateSending updates sending
 	UpdateSending(v *types.Sending) error
 	// SetSendingConfirmed updates sending
-	SetSendingConfirmed(d sumuslib.Digest, from sumuslib.PublicKey, block *big.Int) error
+	SetSendingConfirmed(d mint.Digest, from mint.PublicKey, block *big.Int) error
 
 	// EarliestBlock finds a minimal block ID at which a transaction has been sent
 	EarliestBlock() (*big.Int, bool, error)
 	// LatestSenderNonce gets max used nonce for specified sender or zero
-	LatestSenderNonce(sender sumuslib.PublicKey) (uint64, error)
+	LatestSenderNonce(sender mint.PublicKey) (uint64, error)
 }

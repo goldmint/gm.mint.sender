@@ -2,7 +2,7 @@ package api
 
 import (
 	"github.com/sirupsen/logrus"
-	"github.com/void616/gm-mint-sender/internal/sender/db"
+	"github.com/void616/gm.mint.sender/internal/sender/db"
 )
 
 // API provides methods to enqueue sending

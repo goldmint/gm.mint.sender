@@ -15,24 +15,24 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
-	"github.com/void616/gm-mint-sender/internal/metrics"
-	"github.com/void616/gm-mint-sender/internal/mint/blockobserver"
-	"github.com/void616/gm-mint-sender/internal/mint/blockparser"
-	"github.com/void616/gm-mint-sender/internal/mint/blockranger"
-	"github.com/void616/gm-mint-sender/internal/mint/rpcpool"
-	"github.com/void616/gm-mint-sender/internal/mint/txfilter"
-	"github.com/void616/gm-mint-sender/internal/version"
-	serviceAPI "github.com/void616/gm-mint-sender/internal/watcher/api"
-	serviceHTTP "github.com/void616/gm-mint-sender/internal/watcher/api/http"
-	apiModels "github.com/void616/gm-mint-sender/internal/watcher/api/model"
-	serviceNats "github.com/void616/gm-mint-sender/internal/watcher/api/nats"
-	"github.com/void616/gm-mint-sender/internal/watcher/db"
-	"github.com/void616/gm-mint-sender/internal/watcher/db/mysql"
-	"github.com/void616/gm-mint-sender/internal/watcher/db/types"
-	"github.com/void616/gm-mint-sender/internal/watcher/notifier"
-	"github.com/void616/gm-mint-sender/internal/watcher/txsaver"
-	sumuslib "github.com/void616/gm-sumuslib"
-	"github.com/void616/gm-sumusrpc/rpc"
+	"github.com/void616/gm.mint.sender/internal/metrics"
+	"github.com/void616/gm.mint.sender/internal/mint/blockobserver"
+	"github.com/void616/gm.mint.sender/internal/mint/blockparser"
+	"github.com/void616/gm.mint.sender/internal/mint/blockranger"
+	"github.com/void616/gm.mint.sender/internal/mint/rpcpool"
+	"github.com/void616/gm.mint.sender/internal/mint/txfilter"
+	"github.com/void616/gm.mint.sender/internal/version"
+	serviceAPI "github.com/void616/gm.mint.sender/internal/watcher/api"
+	serviceHTTP "github.com/void616/gm.mint.sender/internal/watcher/api/http"
+	apiModels "github.com/void616/gm.mint.sender/internal/watcher/api/model"
+	serviceNats "github.com/void616/gm.mint.sender/internal/watcher/api/nats"
+	"github.com/void616/gm.mint.sender/internal/watcher/db"
+	"github.com/void616/gm.mint.sender/internal/watcher/db/mysql"
+	"github.com/void616/gm.mint.sender/internal/watcher/db/types"
+	"github.com/void616/gm.mint.sender/internal/watcher/notifier"
+	"github.com/void616/gm.mint.sender/internal/watcher/txsaver"
+	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint.rpc/rpc"
 	"github.com/void616/gotask"
 	"gopkg.in/yaml.v2"
 )
@@ -218,7 +218,7 @@ func main() {
 	defer close(filteredTX)
 
 	// carries public keys of wallets to add/remove from transactions filter
-	var walletToTrack, walletToUntrack = make(chan sumuslib.PublicKey, 256), make(chan sumuslib.PublicKey, 256)
+	var walletToTrack, walletToUntrack = make(chan mint.PublicKey, 256), make(chan mint.PublicKey, 256)
 	defer close(walletToTrack)
 	defer close(walletToUntrack)
 
@@ -276,8 +276,8 @@ func main() {
 	var txFilter *txfilter.Filter
 	{
 		// type/direction filter
-		filter := func(typ sumuslib.Transaction, outgoing bool) bool {
-			return typ == sumuslib.TransactionTransferAssets && !outgoing
+		filter := func(typ mint.Transaction, outgoing bool) bool {
+			return typ == mint.TransactionTransferAssets && !outgoing
 		}
 
 		f, err := txfilter.New(

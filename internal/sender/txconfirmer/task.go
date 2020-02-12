@@ -3,7 +3,7 @@ package txconfirmer
 import (
 	"time"
 
-	sumuslib "github.com/void616/gm-sumuslib"
+	"github.com/void616/gm.mint/transaction"
 	"github.com/void616/gotask"
 )
 
@@ -19,7 +19,7 @@ func (c *Confirmer) Task(token *gotask.Token) {
 		for !empty {
 			select {
 			case tx := <-c.in:
-				if tx.Type == sumuslib.TransactionTransferAssets {
+				if tx.Type == transaction.TransferAssetTx {
 
 					// save to death
 					saved := false

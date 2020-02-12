@@ -1,8 +1,8 @@
 package txfilter
 
 import (
-	"github.com/void616/gm-mint-sender/internal/mint/blockparser"
-	sumuslib "github.com/void616/gm-sumuslib"
+	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint.sender/internal/mint/blockparser"
 )
 
 // roiCheck decides to fan the transaction out.
@@ -21,7 +21,7 @@ func (f *Filter) roiCheck(tx *blockparser.Transaction) bool {
 
 // addWallet adds a wallet to the ROI.
 // `roiLock` should be locked at the time of the method call
-func (f *Filter) addWallet(p sumuslib.PublicKey) bool {
+func (f *Filter) addWallet(p mint.PublicKey) bool {
 	if _, ok := f.roiWallets[p]; !ok {
 		f.roiWallets[p] = struct{}{}
 
@@ -36,7 +36,7 @@ func (f *Filter) addWallet(p sumuslib.PublicKey) bool {
 
 // removeWallet removes a wallet from the ROI.
 // `roiLock` should be locked at the time of the method call
-func (f *Filter) removeWallet(p sumuslib.PublicKey) bool {
+func (f *Filter) removeWallet(p mint.PublicKey) bool {
 	if _, ok := f.roiWallets[p]; ok {
 		delete(f.roiWallets, p)
 

@@ -2,8 +2,8 @@ package txconfirmer
 
 import (
 	"github.com/sirupsen/logrus"
-	"github.com/void616/gm-mint-sender/internal/mint/blockparser"
-	"github.com/void616/gm-mint-sender/internal/sender/db"
+	"github.com/void616/gm.mint.sender/internal/mint/blockparser"
+	"github.com/void616/gm.mint.sender/internal/sender/db"
 )
 
 // Confirmer confirms sent transacions and updates them on DB

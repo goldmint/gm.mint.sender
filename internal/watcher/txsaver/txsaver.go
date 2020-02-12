@@ -4,11 +4,11 @@ import (
 	"sync"
 
 	"github.com/sirupsen/logrus"
-	"github.com/void616/gm-mint-sender/internal/mint/blockparser"
-	"github.com/void616/gm-mint-sender/internal/watcher/api/model"
-	"github.com/void616/gm-mint-sender/internal/watcher/db"
-	"github.com/void616/gm-mint-sender/internal/watcher/db/types"
-	sumuslib "github.com/void616/gm-sumuslib"
+	"github.com/void616/gm.mint.sender/internal/mint/blockparser"
+	"github.com/void616/gm.mint.sender/internal/watcher/api/model"
+	"github.com/void616/gm.mint.sender/internal/watcher/db"
+	"github.com/void616/gm.mint.sender/internal/watcher/db/types"
+	mint "github.com/void616/gm.mint"
 )
 
 // Saver saves filtered transactions to the DB
@@ -16,9 +16,9 @@ type Saver struct {
 	logger         *logrus.Entry
 	transactions   <-chan *blockparser.Transaction
 	walletSubs     <-chan model.WalletSub
-	unfilterWallet chan<- sumuslib.PublicKey
+	unfilterWallet chan<- mint.PublicKey
 	dao            db.DAO
-	subs           map[sumuslib.PublicKey]servicesMap
+	subs           map[mint.PublicKey]servicesMap
 	subsLock       sync.Mutex
 }
 
@@ -28,7 +28,7 @@ type servicesMap map[string]types.Service
 func New(
 	transactions <-chan *blockparser.Transaction,
 	walletSubs <-chan model.WalletSub,
-	unfilterWallet chan<- sumuslib.PublicKey,
+	unfilterWallet chan<- mint.PublicKey,
 	dao db.DAO,
 	logger *logrus.Entry,
 ) (*Saver, error) {
@@ -37,14 +37,14 @@ func New(
 		transactions:   transactions,
 		walletSubs:     walletSubs,
 		dao:            dao,
-		subs:           make(map[sumuslib.PublicKey]servicesMap),
+		subs:           make(map[mint.PublicKey]servicesMap),
 		unfilterWallet: unfilterWallet,
 	}
 	return f, nil
 }
 
 // AddWalletSubs adds subscribers of the specific wallet
-func (s *Saver) AddWalletSubs(p sumuslib.PublicKey, services ...types.Service) {
+func (s *Saver) AddWalletSubs(p mint.PublicKey, services ...types.Service) {
 	s.subsLock.Lock()
 	defer s.subsLock.Unlock()
 	for _, svc := range services {

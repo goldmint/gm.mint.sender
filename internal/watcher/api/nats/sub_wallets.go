@@ -6,10 +6,10 @@ import (
 
 	proto "github.com/golang/protobuf/proto"
 	gonats "github.com/nats-io/go-nats"
-	"github.com/void616/gm-mint-sender/internal/watcher/api/model"
-	"github.com/void616/gm-mint-sender/internal/watcher/db/types"
-	walletNats "github.com/void616/gm-mint-sender/pkg/watcher/nats"
-	sumuslib "github.com/void616/gm-sumuslib"
+	"github.com/void616/gm.mint.sender/internal/watcher/api/model"
+	"github.com/void616/gm.mint.sender/internal/watcher/db/types"
+	walletNats "github.com/void616/gm.mint.sender/pkg/watcher/nats"
+	mint "github.com/void616/gm.mint"
 )
 
 // subAddRemoveWallet processes Nats request to add/remove a wallet
@@ -55,9 +55,9 @@ func (n *Nats) subAddRemoveWallet(m *gonats.Msg) {
 	}
 
 	// unpack base58
-	pubs := make([]sumuslib.PublicKey, 0)
+	pubs := make([]mint.PublicKey, 0)
 	for _, p := range req.GetPublicKey() {
-		pub, err := sumuslib.ParsePublicKey(p)
+		pub, err := mint.ParsePublicKey(p)
 		if err != nil {
 			replyError = "One or more invalid Base58 public keys"
 			return

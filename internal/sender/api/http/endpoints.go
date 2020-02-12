@@ -9,9 +9,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/void616/gm-mint-sender/internal/sender/api/model"
-	sumuslib "github.com/void616/gm-sumuslib"
-	"github.com/void616/gm-sumuslib/amount"
+	"github.com/void616/gm.mint.sender/internal/sender/api/model"
+	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint/amount"
 )
 
 // send is POST method to request token sending
@@ -71,14 +71,14 @@ func (h *HTTP) send(w gohttp.ResponseWriter, r *gohttp.Request) {
 	}
 
 	// parse wallet address
-	reqAddr, err := sumuslib.ParsePublicKey(req.PublicKey)
+	reqAddr, err := mint.ParsePublicKey(req.PublicKey)
 	if err != nil {
 		res.Error = "Invalid public key"
 		return
 	}
 
 	// parse token
-	reqToken, err := sumuslib.ParseToken(req.Token)
+	reqToken, err := mint.ParseToken(req.Token)
 	if err != nil {
 		res.Error = "Invalid token"
 		return

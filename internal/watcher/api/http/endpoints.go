@@ -8,9 +8,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/void616/gm-mint-sender/internal/watcher/api/model"
-	"github.com/void616/gm-mint-sender/internal/watcher/db/types"
-	sumuslib "github.com/void616/gm-sumuslib"
+	"github.com/void616/gm.mint.sender/internal/watcher/api/model"
+	"github.com/void616/gm.mint.sender/internal/watcher/db/types"
+	mint "github.com/void616/gm.mint"
 )
 
 // watch processes request to add a wallet to ROI
@@ -64,9 +64,9 @@ func (h *HTTP) watch(w gohttp.ResponseWriter, r *gohttp.Request) {
 	}
 
 	// unpack base58
-	pubs := make([]sumuslib.PublicKey, 0)
+	pubs := make([]mint.PublicKey, 0)
 	for _, p := range req.PublicKeys {
-		pub, err := sumuslib.ParsePublicKey(p)
+		pub, err := mint.ParsePublicKey(p)
 		if err != nil {
 			res.Error = "One or more invalid Base58 public keys"
 			return
@@ -149,9 +149,9 @@ func (h *HTTP) unwatch(w gohttp.ResponseWriter, r *gohttp.Request) {
 	}
 
 	// unpack base58
-	pubs := make([]sumuslib.PublicKey, 0)
+	pubs := make([]mint.PublicKey, 0)
 	for _, p := range req.PublicKeys {
-		pub, err := sumuslib.ParsePublicKey(p)
+		pub, err := mint.ParsePublicKey(p)
 		if err != nil {
 			res.Error = "One or more invalid Base58 public keys"
 			return

@@ -5,13 +5,13 @@ import (
 	"time"
 
 	proto "github.com/golang/protobuf/proto"
-	walletsvc "github.com/void616/gm-mint-sender/pkg/watcher/nats"
-	sumuslib "github.com/void616/gm-sumuslib"
-	"github.com/void616/gm-sumuslib/amount"
+	walletsvc "github.com/void616/gm.mint.sender/pkg/watcher/nats"
+	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint/amount"
 )
 
 // NotifyRefilling sends an event
-func (n *Nats) NotifyRefilling(service string, to, from sumuslib.PublicKey, t sumuslib.Token, a *amount.Amount, tx sumuslib.Digest) error {
+func (n *Nats) NotifyRefilling(service string, to, from mint.PublicKey, t mint.Token, a *amount.Amount, tx mint.Digest) error {
 
 	// metrics
 	if n.metrics != nil {

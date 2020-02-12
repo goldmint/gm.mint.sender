@@ -1,8 +1,8 @@
 package types
 
-import sumuslib "github.com/void616/gm-sumuslib"
+import mint "github.com/void616/gm.mint"
 
 // Wallet model
 type Wallet struct {
-	PublicKey sumuslib.PublicKey
+	PublicKey mint.PublicKey
 }
