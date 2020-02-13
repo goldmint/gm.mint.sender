@@ -33,7 +33,11 @@ func (f *Filter) Task(token *gotask.Token) {
 				}
 			}
 			if gotTotal > 0 {
-				f.logger.Debugf("Filtered %v from %v transactions", len(buf), gotTotal)
+				if len(buf) > 0 {
+					f.logger.Infof("Filtered %v from %v transactions", len(buf), gotTotal)
+				} else {
+					f.logger.Debugf("Filtered %v from %v transactions", len(buf), gotTotal)
+				}
 			}
 		}
 

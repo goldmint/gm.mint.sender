@@ -17,6 +17,7 @@ import (
 	"github.com/sirupsen/logrus"
 	mint "github.com/void616/gm.mint"
 	"github.com/void616/gm.mint.rpc/request"
+	"github.com/void616/gm.mint.sender/internal/alert"
 	"github.com/void616/gm.mint.sender/internal/metrics"
 	"github.com/void616/gm.mint.sender/internal/mint/blockobserver"
 	"github.com/void616/gm.mint.sender/internal/mint/blockparser"
@@ -114,6 +115,21 @@ func main() {
 		}
 		logger.Infof("Working dir: %v", wd)
 	}
+
+	// alerter
+	var alerter alert.Alerter
+	{
+		if conf.GCloudAlerts && alert.OnGCE() {
+			a, err := alert.NewGCloud("MintSender Sender")
+			if err != nil {
+				logger.WithError(err).Fatal("Failed to setup Google Cloud alerts")
+			}
+			alerter = a
+		} else {
+			alerter = alert.NewLogrus(logger.WithField("alert", ""))
+		}
+	}
+	_ = alerter
 
 	// read sender private keys, make senders
 	var senderSigners []*signer.Signer
@@ -617,9 +633,10 @@ type config struct {
 		Prefix string `yaml:"prefix"`
 	} `yaml:"db"`
 
-	Metrics uint     `yaml:"metrics"`
-	Nodes   []string `yaml:"nodes"`
-	Wallets []string `yaml:"wallets"`
+	Metrics      uint     `yaml:"metrics"`
+	GCloudAlerts bool     `yaml:"gcloud_alerts"`
+	Nodes        []string `yaml:"nodes"`
+	Wallets      []string `yaml:"wallets"`
 }
 
 // ---

@@ -21,7 +21,7 @@ func (r *Ranger) Task(token *gotask.Token) {
 			token.Sleep(time.Second * 10)
 			continue
 		}
-		r.logger.WithField("block", cur.String()).Info("Block completed")
+		r.logger.WithField("block", cur.String()).Debugf("Block completed")
 
 		cur.Add(cur, one)
 		if cur.Cmp(r.to) > 0 {
