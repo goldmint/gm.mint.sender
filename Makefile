@@ -1,5 +1,5 @@
-# Target: app/os/arch/cgo
-TARGETS = watcher/linux/amd64/ sender/linux/amd64/
+# Target: app/os/arch
+TARGETS = watcher/linux/amd64 sender/linux/amd64
 
 VERSION = $(shell ./scripts/version.sh)
 export BUILD_PACKAGE = github.com/void616/gm.mint.sender
@@ -46,20 +46,12 @@ $(TARGETS):
 	export BUILD_APP=cmd/$$APP/main.go ;\
 	export BUILD_OS=$(call split,$@,2) ;\
 	export BUILD_ARCH=$(call split,$@,3) ;\
-	export BUILD_CGO=$(call split,$@,4) ;\
-	if [ "$$BUILD_CGO" != "" ]; then export BUILD_CGO=1; fi ;\
 	if [ "$$BUILD_OS" == "windows" ]; then APPEXT=.exe; fi ;\
 	export BUILD_OUTFILE=$${APP}-$${BUILD_ARCH}$${APPEXT} ;\
 	export BUILD_OUTDIR=$(OUTPUT_DIR)/$${APP}-$${BUILD_OS} ;\
 	\
-	if [ "$$BUILD_CGO" != "" ]; then \
-		echo "Building $$BUILD_APP ($${BUILD_OS}/$${BUILD_ARCH}) via Docker" ;\
-		docker build -t gobuild_with_docker -f ./scripts/gobuild_with_docker . ;\
-		./scripts/gobuild_with_docker.sh ;\
-	else \
-		echo "Building $$BUILD_APP ($${BUILD_OS}/$${BUILD_ARCH})" ;\
-		./scripts/gobuild.sh ;\
-	fi ;\
+	echo "Building $$BUILD_APP ($${BUILD_OS}/$${BUILD_ARCH})" ;\
+	./scripts/gobuild.sh ;\
 	}
 
 image:
