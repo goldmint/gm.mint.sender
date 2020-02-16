@@ -1,29 +1,29 @@
 package api
 
 import (
+	mint "github.com/void616/gm.mint"
 	"github.com/void616/gm.mint.sender/internal/watcher/api/model"
 	"github.com/void616/gm.mint.sender/internal/watcher/db/types"
-	mint "github.com/void616/gm.mint"
 )
 
 // AddWallet adds wallet to the DB and sends it to the transaction filter
-func (api *API) AddWallet(svc string, trans types.ServiceTransport, svcURL string, pub ...mint.PublicKey) bool {
+func (api *API) AddWallet(trans types.ServiceTransport, service, callbackURL string, pub ...mint.PublicKey) bool {
 
 	if err := api.dao.PutService(&types.Service{
-		Name:        svc,
+		Name:        service,
 		Transport:   trans,
-		CallbackURL: svcURL,
+		CallbackURL: callbackURL,
 	}); err != nil {
 		api.logger.WithError(err).Error("Failed to add service")
 		return false
 	}
 
-	service, err := api.dao.GetService(svc)
+	s, err := api.dao.GetService(service)
 	if err != nil {
 		api.logger.WithError(err).Error("Failed to get service")
 		return false
 	}
-	if service == nil {
+	if s == nil {
 		api.logger.WithError(err).Error("Failed to find service")
 		return false
 	}
@@ -32,7 +32,7 @@ func (api *API) AddWallet(svc string, trans types.ServiceTransport, svcURL strin
 	for i, v := range pub {
 		list[i] = &types.Wallet{
 			PublicKey: v,
-			Service:   *service,
+			Service:   *s,
 		}
 	}
 
@@ -43,7 +43,7 @@ func (api *API) AddWallet(svc string, trans types.ServiceTransport, svcURL strin
 	for _, p := range pub {
 		api.walletSubs <- model.WalletSub{
 			PublicKey: p,
-			Service:   *service,
+			Service:   *s,
 			Add:       true,
 		}
 		api.watchWallet <- p
@@ -52,14 +52,14 @@ func (api *API) AddWallet(svc string, trans types.ServiceTransport, svcURL strin
 }
 
 // RemoveWallet removes wallet from the DB and from the transaction filter
-func (api *API) RemoveWallet(svc string, pub ...mint.PublicKey) bool {
+func (api *API) RemoveWallet(service string, pub ...mint.PublicKey) bool {
 
-	service, err := api.dao.GetService(svc)
+	s, err := api.dao.GetService(service)
 	if err != nil {
 		api.logger.WithError(err).Error("Failed to get service")
 		return false
 	}
-	if service == nil {
+	if s == nil {
 		api.logger.WithError(err).Error("Failed to find service")
 		return false
 	}
@@ -68,7 +68,7 @@ func (api *API) RemoveWallet(svc string, pub ...mint.PublicKey) bool {
 	for i, v := range pub {
 		list[i] = &types.Wallet{
 			PublicKey: v,
-			Service:   *service,
+			Service:   *s,
 		}
 	}
 
@@ -79,7 +79,7 @@ func (api *API) RemoveWallet(svc string, pub ...mint.PublicKey) bool {
 	for _, p := range pub {
 		api.walletSubs <- model.WalletSub{
 			PublicKey: p,
-			Service:   *service,
+			Service:   *s,
 			Add:       false,
 		}
 	}

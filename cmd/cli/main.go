@@ -11,7 +11,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/golang/protobuf/proto"
-	gonats "github.com/nats-io/go-nats"
+	gonats "github.com/nats-io/nats.go"
 	mint "github.com/void616/gm.mint"
 	senderNats "github.com/void616/gm.mint.sender/pkg/sender/nats"
 	watcherNats "github.com/void616/gm.mint.sender/pkg/watcher/nats"

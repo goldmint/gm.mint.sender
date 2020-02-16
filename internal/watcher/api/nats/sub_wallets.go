@@ -2,14 +2,13 @@ package nats
 
 import (
 	"time"
-	"unicode/utf8"
 
 	proto "github.com/golang/protobuf/proto"
-	gonats "github.com/nats-io/go-nats"
+	gonats "github.com/nats-io/nats.go"
+	mint "github.com/void616/gm.mint"
 	"github.com/void616/gm.mint.sender/internal/watcher/api/model"
 	"github.com/void616/gm.mint.sender/internal/watcher/db/types"
 	walletNats "github.com/void616/gm.mint.sender/pkg/watcher/nats"
-	mint "github.com/void616/gm.mint"
 )
 
 // subAddRemoveWallet processes Nats request to add/remove a wallet
@@ -49,8 +48,8 @@ func (n *Nats) subAddRemoveWallet(m *gonats.Msg) {
 	}()
 
 	// check req service
-	if x := utf8.RuneCountInString(req.GetService()); x < 1 || x > 64 || !model.ServiceNameRex.MatchString(req.GetService()) {
-		replyError = "Invalid service name"
+	if !model.ServiceNameRex.MatchString(req.GetService()) {
+		replyError = "invalid service name"
 		return
 	}
 
@@ -59,19 +58,19 @@ func (n *Nats) subAddRemoveWallet(m *gonats.Msg) {
 	for _, p := range req.GetPublicKey() {
 		pub, err := mint.ParsePublicKey(p)
 		if err != nil {
-			replyError = "One or more invalid Base58 public keys"
+			replyError = "one or more invalid Base58 public keys"
 			return
 		}
 		pubs = append(pubs, pub)
 	}
 	if req.GetAdd() {
-		if !n.api.AddWallet(req.GetService(), types.ServiceNats, "", pubs...) {
-			replyError = "Internal failure"
+		if !n.api.AddWallet(types.ServiceNats, req.GetService(), "", pubs...) {
+			replyError = "internal failure"
 			return
 		}
 	} else {
 		if !n.api.RemoveWallet(req.GetService(), pubs...) {
-			replyError = "Internal failure"
+			replyError = "internal failure"
 			return
 		}
 	}

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	mint "github.com/void616/gm.mint"
+	pkg "github.com/void616/gm.mint.sender/pkg/sender/http"
 	"github.com/void616/gm.mint/amount"
 )
 
@@ -33,7 +34,7 @@ func (h *HTTP) PublishSentEvent(
 		transaction = (*digest).String()
 	}
 
-	event := SentEvent{
+	event := pkg.SentEvent{
 		Success:     success,
 		Error:       msgerr,
 		Service:     service,
@@ -98,7 +99,7 @@ func (h *HTTP) PublishApprovedEvent(
 		transaction = (*digest).String()
 	}
 
-	event := ApprovedEvent{
+	event := pkg.ApprovedEvent{
 		Success:     success,
 		Error:       msgerr,
 		Service:     service,

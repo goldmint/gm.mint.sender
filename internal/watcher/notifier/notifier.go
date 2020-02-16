@@ -2,8 +2,8 @@ package notifier
 
 import (
 	"github.com/sirupsen/logrus"
-	"github.com/void616/gm.mint.sender/internal/watcher/db"
 	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint.sender/internal/watcher/db"
 	"github.com/void616/gm.mint/amount"
 )
 

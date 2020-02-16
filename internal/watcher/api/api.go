@@ -2,9 +2,9 @@ package api
 
 import (
 	"github.com/sirupsen/logrus"
+	mint "github.com/void616/gm.mint"
 	"github.com/void616/gm.mint.sender/internal/watcher/api/model"
 	"github.com/void616/gm.mint.sender/internal/watcher/db"
-	mint "github.com/void616/gm.mint"
 )
 
 // API provides methods to interact with service

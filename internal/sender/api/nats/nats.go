@@ -3,10 +3,11 @@ package nats
 import (
 	"time"
 
-	gonats "github.com/nats-io/go-nats"
+	gonats "github.com/nats-io/nats.go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint.sender/internal/sender/db/types"
 	senderNats "github.com/void616/gm.mint.sender/pkg/sender/nats"
 	"github.com/void616/gm.mint/amount"
 	"github.com/void616/gotask"
@@ -23,8 +24,8 @@ type Nats struct {
 
 // API provides ability to interact with service API
 type API interface {
-	EnqueueSendingNats(id, service string, to mint.PublicKey, a *amount.Amount, t mint.Token) (dup, success bool)
-	EnqueueApprovementNats(id, service string, to mint.PublicKey) (dup, success bool)
+	EnqueueSending(trans types.SendingTransport, id, service, callbackURL string, to mint.PublicKey, amo *amount.Amount, token mint.Token) (dup, success bool)
+	EnqueueApprovement(trans types.SendingTransport, id, service, callbackURL string, to mint.PublicKey) (dup, success bool)
 }
 
 // New instance

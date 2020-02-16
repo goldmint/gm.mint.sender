@@ -4,13 +4,12 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	gohttp "net/http"
-	"net/url"
 	"time"
-	"unicode/utf8"
 
+	mint "github.com/void616/gm.mint"
 	"github.com/void616/gm.mint.sender/internal/watcher/api/model"
 	"github.com/void616/gm.mint.sender/internal/watcher/db/types"
-	mint "github.com/void616/gm.mint"
+	pkg "github.com/void616/gm.mint.sender/pkg/watcher/http"
 )
 
 // watch processes request to add a wallet to ROI
@@ -25,7 +24,7 @@ func (h *HTTP) watch(w gohttp.ResponseWriter, r *gohttp.Request) {
 	}
 
 	// parse
-	req := WatchRequest{}
+	req := pkg.WatchRequest{}
 	{
 		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -46,6 +45,7 @@ func (h *HTTP) watch(w gohttp.ResponseWriter, r *gohttp.Request) {
 		Error   string `json:"error,omitempty"`
 		Status  int    `json:"-"`
 	}{false, "", gohttp.StatusBadRequest}
+
 	defer func() {
 		b, err := json.Marshal(&res)
 		if err != nil {
@@ -58,8 +58,8 @@ func (h *HTTP) watch(w gohttp.ResponseWriter, r *gohttp.Request) {
 	}()
 
 	// check req service
-	if x := utf8.RuneCountInString(req.Service); x < 1 || x > 64 || !model.ServiceNameRex.MatchString(req.Service) {
-		res.Error = "Invalid service name"
+	if !model.ServiceNameRex.MatchString(req.Service) {
+		res.Error = "invalid service name"
 		return
 	}
 
@@ -68,26 +68,25 @@ func (h *HTTP) watch(w gohttp.ResponseWriter, r *gohttp.Request) {
 	for _, p := range req.PublicKeys {
 		pub, err := mint.ParsePublicKey(p)
 		if err != nil {
-			res.Error = "One or more invalid Base58 public keys"
+			res.Error = "one or more invalid Base58 public keys"
 			return
 		}
 		pubs = append(pubs, pub)
 	}
 	if len(pubs) == 0 {
-		res.Error = "Empty list of public keys"
+		res.Error = "empty list of public keys"
 		return
 	}
 
 	// parse callback
-	reqURL, err := url.Parse(req.Callback)
-	if err != nil || !reqURL.IsAbs() || !(reqURL.Scheme == "http" || reqURL.Scheme == "https") {
-		res.Error = "Invalid callback"
+	if !model.ValidCallback(req.Callback) {
+		res.Error = "invalid callback"
 		return
 	}
 
 	// add to ROI
-	if !h.api.AddWallet(req.Service, types.ServiceHTTP, req.Callback, pubs...) {
-		res.Error = "Internal failure"
+	if !h.api.AddWallet(types.ServiceHTTP, req.Service, req.Callback, pubs...) {
+		res.Error = "internal failure"
 		res.Status = gohttp.StatusInternalServerError
 		return
 	}
@@ -110,7 +109,7 @@ func (h *HTTP) unwatch(w gohttp.ResponseWriter, r *gohttp.Request) {
 	}
 
 	// parse
-	req := UnwatchRequest{}
+	req := pkg.UnwatchRequest{}
 	{
 		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -131,6 +130,7 @@ func (h *HTTP) unwatch(w gohttp.ResponseWriter, r *gohttp.Request) {
 		Error   string `json:"error,omitempty"`
 		Status  int    `json:"-"`
 	}{false, "", gohttp.StatusBadRequest}
+
 	defer func() {
 		b, err := json.Marshal(&res)
 		if err != nil {
@@ -143,8 +143,8 @@ func (h *HTTP) unwatch(w gohttp.ResponseWriter, r *gohttp.Request) {
 	}()
 
 	// check req service
-	if x := utf8.RuneCountInString(req.Service); x < 1 || x > 64 || !model.ServiceNameRex.MatchString(req.Service) {
-		res.Error = "Invalid service name"
+	if !model.ServiceNameRex.MatchString(req.Service) {
+		res.Error = "invalid service name"
 		return
 	}
 
@@ -153,19 +153,19 @@ func (h *HTTP) unwatch(w gohttp.ResponseWriter, r *gohttp.Request) {
 	for _, p := range req.PublicKeys {
 		pub, err := mint.ParsePublicKey(p)
 		if err != nil {
-			res.Error = "One or more invalid Base58 public keys"
+			res.Error = "one or more invalid Base58 public keys"
 			return
 		}
 		pubs = append(pubs, pub)
 	}
 	if len(pubs) == 0 {
-		res.Error = "Empty list of public keys"
+		res.Error = "empty list of public keys"
 		return
 	}
 
 	// add to ROI
 	if !h.api.RemoveWallet(req.Service, pubs...) {
-		res.Error = "Internal failure"
+		res.Error = "internal failure"
 		res.Status = gohttp.StatusInternalServerError
 		return
 	}

@@ -5,8 +5,8 @@ import (
 	"time"
 
 	proto "github.com/golang/protobuf/proto"
-	walletsvc "github.com/void616/gm.mint.sender/pkg/watcher/nats"
 	mint "github.com/void616/gm.mint"
+	walletsvc "github.com/void616/gm.mint.sender/pkg/watcher/nats"
 	"github.com/void616/gm.mint/amount"
 )
 

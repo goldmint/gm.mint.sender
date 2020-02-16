@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint.sender/internal/sender/db/types"
 	"github.com/void616/gm.mint/amount"
 	"github.com/void616/gotask"
 )
@@ -24,8 +25,8 @@ type HTTP struct {
 
 // API provides ability to interact with service API
 type API interface {
-	EnqueueSendingHTTP(id, service, callbackURL string, to mint.PublicKey, a *amount.Amount, t mint.Token) (dup, success bool)
-	EnqueueApprovementHTTP(id, service, callbackURL string, to mint.PublicKey) (dup, success bool)
+	EnqueueSending(trans types.SendingTransport, id, service, callbackURL string, to mint.PublicKey, amo *amount.Amount, token mint.Token) (dup, success bool)
+	EnqueueApprovement(trans types.SendingTransport, id, service, callbackURL string, to mint.PublicKey) (dup, success bool)
 }
 
 // New instance

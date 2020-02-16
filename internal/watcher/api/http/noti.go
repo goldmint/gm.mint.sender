@@ -8,6 +8,7 @@ import (
 	"time"
 
 	mint "github.com/void616/gm.mint"
+	pkg "github.com/void616/gm.mint.sender/pkg/watcher/http"
 	"github.com/void616/gm.mint/amount"
 )
 
@@ -20,7 +21,7 @@ func (h *HTTP) NotifyRefilling(url, service string, to, from mint.PublicKey, t m
 		}(time.Now())
 	}
 
-	event := RefillEvent{
+	event := pkg.RefillEvent{
 		Service:     service,
 		PublicKey:   to.String(),
 		From:        from.String(),

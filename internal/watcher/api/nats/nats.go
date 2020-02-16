@@ -3,12 +3,12 @@ package nats
 import (
 	"time"
 
-	gonats "github.com/nats-io/go-nats"
+	gonats "github.com/nats-io/nats.go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
+	mint "github.com/void616/gm.mint"
 	"github.com/void616/gm.mint.sender/internal/watcher/db/types"
 	walletNats "github.com/void616/gm.mint.sender/pkg/watcher/nats"
-	mint "github.com/void616/gm.mint"
 	"github.com/void616/gotask"
 )
 
@@ -23,7 +23,7 @@ type Nats struct {
 
 // API provides API methods
 type API interface {
-	AddWallet(service string, serviceTrans types.ServiceTransport, serviceCallbackURL string, p ...mint.PublicKey) bool
+	AddWallet(serviceTrans types.ServiceTransport, service string, callbackURL string, p ...mint.PublicKey) bool
 	RemoveWallet(service string, p ...mint.PublicKey) bool
 }
 
