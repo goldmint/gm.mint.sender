@@ -15,9 +15,9 @@ type API struct {
 
 // New instance
 func New(
-	logger *logrus.Entry,
 	dao db.DAO,
 	pool *rpcpool.Pool,
+	logger *logrus.Entry,
 ) (*API, error) {
 	f := &API{
 		logger: logger,

@@ -355,6 +355,7 @@ func main() {
 	{
 		a, err := serviceAPI.New(
 			dao,
+			rpcPool,
 			logger.WithField("task", "api"),
 		)
 		if err != nil {

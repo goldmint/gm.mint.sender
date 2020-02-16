@@ -34,7 +34,7 @@ func (m *Send) Reset()         { *m = Send{} }
 func (m *Send) String() string { return proto.CompactTextString(m) }
 func (*Send) ProtoMessage()    {}
 func (*Send) Descriptor() ([]byte, []int) {
-	return fileDescriptor_request_7caa5e2a0340e29b, []int{0}
+	return fileDescriptor_request_d853c7799507276f, []int{0}
 }
 func (m *Send) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Send.Unmarshal(m, b)
@@ -102,7 +102,7 @@ func (m *SendReply) Reset()         { *m = SendReply{} }
 func (m *SendReply) String() string { return proto.CompactTextString(m) }
 func (*SendReply) ProtoMessage()    {}
 func (*SendReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_request_7caa5e2a0340e29b, []int{1}
+	return fileDescriptor_request_d853c7799507276f, []int{1}
 }
 func (m *SendReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SendReply.Unmarshal(m, b)
@@ -150,7 +150,7 @@ func (m *Approve) Reset()         { *m = Approve{} }
 func (m *Approve) String() string { return proto.CompactTextString(m) }
 func (*Approve) ProtoMessage()    {}
 func (*Approve) Descriptor() ([]byte, []int) {
-	return fileDescriptor_request_7caa5e2a0340e29b, []int{2}
+	return fileDescriptor_request_d853c7799507276f, []int{2}
 }
 func (m *Approve) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Approve.Unmarshal(m, b)
@@ -204,7 +204,7 @@ func (m *ApproveReply) Reset()         { *m = ApproveReply{} }
 func (m *ApproveReply) String() string { return proto.CompactTextString(m) }
 func (*ApproveReply) ProtoMessage()    {}
 func (*ApproveReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_request_7caa5e2a0340e29b, []int{3}
+	return fileDescriptor_request_d853c7799507276f, []int{3}
 }
 func (m *ApproveReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ApproveReply.Unmarshal(m, b)
@@ -245,9 +245,9 @@ func init() {
 	proto.RegisterType((*ApproveReply)(nil), "request.ApproveReply")
 }
 
-func init() { proto.RegisterFile("request.proto", fileDescriptor_request_7caa5e2a0340e29b) }
+func init() { proto.RegisterFile("request.proto", fileDescriptor_request_d853c7799507276f) }
 
-var fileDescriptor_request_7caa5e2a0340e29b = []byte{
+var fileDescriptor_request_d853c7799507276f = []byte{
 	// 221 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x91, 0x31, 0x4b, 0x43, 0x31,
 	0x10, 0x80, 0x69, 0x6c, 0xdf, 0xf3, 0x1d, 0xea, 0x10, 0x44, 0x22, 0x38, 0x48, 0x70, 0x70, 0xea,
