@@ -6,12 +6,13 @@ import (
 
 // SendRequest is /send request model
 type SendRequest struct {
-	Service   string `json:"service"`    // Service name (to differentiate multiple requestors): 1..64
-	ID        string `json:"id"`         // Unique request ID (within service): 1..64
-	PublicKey string `json:"public_key"` // Destination wallet address in Base58
-	Token     string `json:"token"`      // GOLD or MNT
-	Amount    string `json:"amount"`     // Token amount in major units: 1.234 (18 decimal places)
-	Callback  string `json:"callback"`   // Callback for notification: 1..256 or empty
+	Service           string `json:"service"`            // Service name (to differentiate multiple requestors): 1..64
+	ID                string `json:"id"`                 // Unique request ID (within service): 1..64
+	PublicKey         string `json:"public_key"`         // Destination wallet address in Base58
+	Token             string `json:"token"`              // GOLD or MNT
+	Amount            string `json:"amount"`             // Token amount in major units: 1.234 (18 decimal places)
+	Callback          string `json:"callback"`           // Callback for notification: 1..256 or empty
+	IgnoreApprovement bool   `json:"ignore_approvement"` // Indicates wallet may not be approved (valid only if sender has 'emission' tag)
 }
 
 // String implementation

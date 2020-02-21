@@ -35,7 +35,6 @@ type SignerData struct {
 	emitter     bool
 	approver    bool
 	signedCount uint64
-	failed      bool
 }
 
 // New Signer instance
@@ -102,7 +101,6 @@ func New(
 			emitter:     emitter,
 			approver:    approver,
 			signedCount: 0,
-			failed:      false,
 		}
 
 		logGold, logMnt := strconv.FormatFloat(walletState.Balance.Gold.Float64(), 'f', 6, 64), strconv.FormatFloat(walletState.Balance.Mnt.Float64(), 'f', 6, 64)

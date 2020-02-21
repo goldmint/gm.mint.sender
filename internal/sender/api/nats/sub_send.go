@@ -82,7 +82,7 @@ func (n *Nats) subSendRequest(m *gonats.Msg) {
 	}
 
 	// enqueue
-	if dups, ok := n.api.EnqueueSending(types.SendingNats, req.GetId(), req.GetService(), "", reqAddr, reqAmount, reqToken); !ok {
+	if dups, ok := n.api.EnqueueSending(types.SendingNats, req.GetId(), req.GetService(), "", reqAddr, reqAmount, reqToken, req.GetIgnoreApprovement()); !ok {
 		if dups {
 			replyError = "request with the same ID registered"
 		} else {

@@ -34,8 +34,6 @@ build: clean gen $(TARGETS)
 clean:
 	rm -rf ./build/bin/* | true
 	mkdir -p ./build/bin | true
-	rm -rf ./build/dist/* | true
-	mkdir -p ./build/dist | true
 
 gen:
 	go generate ./...

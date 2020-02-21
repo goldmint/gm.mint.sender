@@ -7,11 +7,12 @@ option csharp_namespace = "MintSender.Sender.Request";
 
 // Send is a request to the service to send token to the specified wallet
 message Send {
-	string service = 1;    // Service name (to differentiate multiple requestors): 1..64
-	string id = 2;         // Unique request ID (within service): 1..64
-	string publicKey = 3;  // Destination wallet address in Base58
-	string token = 4;      // GOLD or MNT
-	string amount = 5;     // Token amount in major units: 1.234 (18 decimal places)
+	string service = 1;          // Service name (to differentiate multiple requestors): 1..64
+	string id = 2;               // Unique request ID (within service): 1..64
+	string publicKey = 3;        // Destination wallet address in Base58
+	string token = 4;            // GOLD or MNT
+	string amount = 5;           // Token amount in major units: 1.234 (18 decimal places)
+	bool ignoreApprovement = 6;  // Indicates wallet may not be approved (valid only if sender has 'emission' tag)
 }
 
 // SendReply is a reply for Send

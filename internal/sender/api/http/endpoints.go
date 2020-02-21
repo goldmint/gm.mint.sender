@@ -101,7 +101,7 @@ func (h *HTTP) send(w gohttp.ResponseWriter, r *gohttp.Request) {
 	}
 
 	// enqueue
-	if dups, ok := h.api.EnqueueSending(types.SendingHTTP, req.ID, req.Service, req.Callback, reqAddr, reqAmount, reqToken); !ok {
+	if dups, ok := h.api.EnqueueSending(types.SendingHTTP, req.ID, req.Service, req.Callback, reqAddr, reqAmount, reqToken, req.IgnoreApprovement); !ok {
 		if dups {
 			res.Error = "request with the same ID registered"
 		} else {

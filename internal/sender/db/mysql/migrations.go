@@ -32,4 +32,17 @@ var migrations = []*gormigrate.Migration{
 				Error
 		},
 	},
+
+	// sendings: optional wallet approvement ignoring
+	&gormigrate.Migration{
+		ID: "2020-02-21T20:12:48.866Z",
+		Migrate: func(tx *gorm.DB) error {
+			return tx.
+				AutoMigrate(&model.Sending{}).
+				Error
+		},
+		Rollback: func(tx *gorm.DB) error {
+			return nil
+		},
+	},
 }

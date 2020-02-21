@@ -5,30 +5,31 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/void616/gm.mint.sender/internal/sender/db/types"
 	mint "github.com/void616/gm.mint"
+	"github.com/void616/gm.mint.sender/internal/sender/db/types"
 	"github.com/void616/gm.mint/amount"
 )
 
 // Sending model
 type Sending struct {
-	ID            uint64     `gorm:"PRIMARY_KEY;AUTO_INCREMENT:true;NOT NULL"`
-	Transport     uint8      `gorm:"NOT NULL"`
-	Service       string     `gorm:"SIZE:64;NOT NULL"`
-	Status        uint8      `gorm:"NOT NULL"`
-	To            []byte     `gorm:"SIZE:32;NOT NULL"`
-	Amount        string     `gorm:"NOT NULL" sql:"TYPE:decimal(30,18)"`
-	Token         uint16     `gorm:"NOT NULL"`
-	Sender        []byte     `gorm:"SIZE:32"`
-	SenderNonce   *uint64    `gorm:""`
-	Digest        []byte     `gorm:"SIZE:32"`
-	SentAtBlock   []byte     `gorm:"SIZE:32"`
-	Block         []byte     `gorm:"SIZE:32"`
-	RequestID     string     `gorm:"SIZE:64;NOT NULL"`
-	CallbackURL   string     `gorm:"SIZE:256;NOT NULL"`
-	FirstNotifyAt *time.Time `gorm:""`
-	NotifyAt      *time.Time `gorm:""`
-	Notified      bool       `gorm:"NOT NULL"`
+	ID                uint64     `gorm:"PRIMARY_KEY;AUTO_INCREMENT:true;NOT NULL"`
+	Transport         uint8      `gorm:"NOT NULL"`
+	Service           string     `gorm:"SIZE:64;NOT NULL"`
+	Status            uint8      `gorm:"NOT NULL"`
+	To                []byte     `gorm:"SIZE:32;NOT NULL"`
+	Amount            string     `gorm:"NOT NULL" sql:"TYPE:decimal(30,18)"`
+	Token             uint16     `gorm:"NOT NULL"`
+	IgnoreApprovement bool       `gorm:"NOT NULL"`
+	Sender            []byte     `gorm:"SIZE:32"`
+	SenderNonce       *uint64    `gorm:""`
+	Digest            []byte     `gorm:"SIZE:32"`
+	SentAtBlock       []byte     `gorm:"SIZE:32"`
+	Block             []byte     `gorm:"SIZE:32"`
+	RequestID         string     `gorm:"SIZE:64;NOT NULL"`
+	CallbackURL       string     `gorm:"SIZE:256;NOT NULL"`
+	FirstNotifyAt     *time.Time `gorm:""`
+	NotifyAt          *time.Time `gorm:""`
+	Notified          bool       `gorm:"NOT NULL"`
 }
 
 // MapFrom mapping
@@ -39,6 +40,7 @@ func (s *Sending) MapFrom(t *types.Sending) error {
 	s.To = t.To.Bytes()
 	s.Amount = t.Amount.String()
 	s.Token = uint16(t.Token)
+	s.IgnoreApprovement = t.IgnoreApprovement
 	if t.Sender != nil {
 		s.Sender = (*t.Sender).Bytes()
 	} else {
@@ -116,22 +118,23 @@ func (s *Sending) MapTo() (*types.Sending, error) {
 	}
 
 	return &types.Sending{
-		ID:            s.ID,
-		Transport:     types.SendingTransport(s.Transport),
-		Status:        types.SendingStatus(s.Status),
-		To:            to,
-		Amount:        amo,
-		Token:         mint.Token(s.Token),
-		Sender:        sender,
-		SenderNonce:   s.SenderNonce,
-		Digest:        digest,
-		SentAtBlock:   sentAtBlock,
-		Block:         block,
-		Service:       s.Service,
-		RequestID:     s.RequestID,
-		CallbackURL:   s.CallbackURL,
-		FirstNotifyAt: s.FirstNotifyAt,
-		NotifyAt:      s.NotifyAt,
-		Notified:      s.Notified,
+		ID:                s.ID,
+		Transport:         types.SendingTransport(s.Transport),
+		Status:            types.SendingStatus(s.Status),
+		To:                to,
+		Amount:            amo,
+		Token:             mint.Token(s.Token),
+		IgnoreApprovement: s.IgnoreApprovement,
+		Sender:            sender,
+		SenderNonce:       s.SenderNonce,
+		Digest:            digest,
+		SentAtBlock:       sentAtBlock,
+		Block:             block,
+		Service:           s.Service,
+		RequestID:         s.RequestID,
+		CallbackURL:       s.CallbackURL,
+		FirstNotifyAt:     s.FirstNotifyAt,
+		NotifyAt:          s.NotifyAt,
+		Notified:          s.Notified,
 	}, nil
 }

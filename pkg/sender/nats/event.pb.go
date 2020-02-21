@@ -3,9 +3,11 @@
 
 package sender
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // Sent is an event from the service notifying about a wallet sending transaction result
 type Sent struct {
@@ -37,16 +39,17 @@ func (m *Sent) Reset()         { *m = Sent{} }
 func (m *Sent) String() string { return proto.CompactTextString(m) }
 func (*Sent) ProtoMessage()    {}
 func (*Sent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_event_77c465919cc27f3c, []int{0}
+	return fileDescriptor_2d17a9d3f0ddf27e, []int{0}
 }
+
 func (m *Sent) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Sent.Unmarshal(m, b)
 }
 func (m *Sent) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Sent.Marshal(b, m, deterministic)
 }
-func (dst *Sent) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Sent.Merge(dst, src)
+func (m *Sent) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Sent.Merge(m, src)
 }
 func (m *Sent) XXX_Size() int {
 	return xxx_messageInfo_Sent.Size(m)
@@ -126,16 +129,17 @@ func (m *SentAck) Reset()         { *m = SentAck{} }
 func (m *SentAck) String() string { return proto.CompactTextString(m) }
 func (*SentAck) ProtoMessage()    {}
 func (*SentAck) Descriptor() ([]byte, []int) {
-	return fileDescriptor_event_77c465919cc27f3c, []int{1}
+	return fileDescriptor_2d17a9d3f0ddf27e, []int{1}
 }
+
 func (m *SentAck) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SentAck.Unmarshal(m, b)
 }
 func (m *SentAck) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_SentAck.Marshal(b, m, deterministic)
 }
-func (dst *SentAck) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_SentAck.Merge(dst, src)
+func (m *SentAck) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SentAck.Merge(m, src)
 }
 func (m *SentAck) XXX_Size() int {
 	return xxx_messageInfo_SentAck.Size(m)
@@ -177,16 +181,17 @@ func (m *Approved) Reset()         { *m = Approved{} }
 func (m *Approved) String() string { return proto.CompactTextString(m) }
 func (*Approved) ProtoMessage()    {}
 func (*Approved) Descriptor() ([]byte, []int) {
-	return fileDescriptor_event_77c465919cc27f3c, []int{2}
+	return fileDescriptor_2d17a9d3f0ddf27e, []int{2}
 }
+
 func (m *Approved) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Approved.Unmarshal(m, b)
 }
 func (m *Approved) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Approved.Marshal(b, m, deterministic)
 }
-func (dst *Approved) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Approved.Merge(dst, src)
+func (m *Approved) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Approved.Merge(m, src)
 }
 func (m *Approved) XXX_Size() int {
 	return xxx_messageInfo_Approved.Size(m)
@@ -252,16 +257,17 @@ func (m *ApprovedAck) Reset()         { *m = ApprovedAck{} }
 func (m *ApprovedAck) String() string { return proto.CompactTextString(m) }
 func (*ApprovedAck) ProtoMessage()    {}
 func (*ApprovedAck) Descriptor() ([]byte, []int) {
-	return fileDescriptor_event_77c465919cc27f3c, []int{3}
+	return fileDescriptor_2d17a9d3f0ddf27e, []int{3}
 }
+
 func (m *ApprovedAck) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ApprovedAck.Unmarshal(m, b)
 }
 func (m *ApprovedAck) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ApprovedAck.Marshal(b, m, deterministic)
 }
-func (dst *ApprovedAck) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ApprovedAck.Merge(dst, src)
+func (m *ApprovedAck) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ApprovedAck.Merge(m, src)
 }
 func (m *ApprovedAck) XXX_Size() int {
 	return xxx_messageInfo_ApprovedAck.Size(m)
@@ -293,9 +299,9 @@ func init() {
 	proto.RegisterType((*ApprovedAck)(nil), "event.ApprovedAck")
 }
 
-func init() { proto.RegisterFile("event.proto", fileDescriptor_event_77c465919cc27f3c) }
+func init() { proto.RegisterFile("event.proto", fileDescriptor_2d17a9d3f0ddf27e) }
 
-var fileDescriptor_event_77c465919cc27f3c = []byte{
+var fileDescriptor_2d17a9d3f0ddf27e = []byte{
 	// 251 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x92, 0xb1, 0x4e, 0xc3, 0x30,
 	0x10, 0x40, 0xe5, 0xd0, 0x38, 0xe9, 0x45, 0x62, 0xb0, 0x10, 0xdc, 0xc0, 0x10, 0x65, 0xea, 0xd4,

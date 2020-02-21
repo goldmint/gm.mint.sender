@@ -24,7 +24,7 @@ type Nats struct {
 
 // API provides ability to interact with service API
 type API interface {
-	EnqueueSending(trans types.SendingTransport, id, service, callbackURL string, to mint.PublicKey, amo *amount.Amount, token mint.Token) (dup, success bool)
+	EnqueueSending(trans types.SendingTransport, id, service, callbackURL string, to mint.PublicKey, amo *amount.Amount, token mint.Token, ignoreApprovement bool) (dup, success bool)
 	EnqueueApprovement(trans types.SendingTransport, id, service, callbackURL string, to mint.PublicKey) (dup, success bool)
 }
 

@@ -3,9 +3,11 @@
 
 package watcher
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // Refill is an event from the service notifying about a wallet refilling transaction
 type Refill struct {
@@ -35,16 +37,17 @@ func (m *Refill) Reset()         { *m = Refill{} }
 func (m *Refill) String() string { return proto.CompactTextString(m) }
 func (*Refill) ProtoMessage()    {}
 func (*Refill) Descriptor() ([]byte, []int) {
-	return fileDescriptor_event_f6a06832078200ee, []int{0}
+	return fileDescriptor_2d17a9d3f0ddf27e, []int{0}
 }
+
 func (m *Refill) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Refill.Unmarshal(m, b)
 }
 func (m *Refill) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Refill.Marshal(b, m, deterministic)
 }
-func (dst *Refill) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Refill.Merge(dst, src)
+func (m *Refill) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Refill.Merge(m, src)
 }
 func (m *Refill) XXX_Size() int {
 	return xxx_messageInfo_Refill.Size(m)
@@ -110,16 +113,17 @@ func (m *RefillAck) Reset()         { *m = RefillAck{} }
 func (m *RefillAck) String() string { return proto.CompactTextString(m) }
 func (*RefillAck) ProtoMessage()    {}
 func (*RefillAck) Descriptor() ([]byte, []int) {
-	return fileDescriptor_event_f6a06832078200ee, []int{1}
+	return fileDescriptor_2d17a9d3f0ddf27e, []int{1}
 }
+
 func (m *RefillAck) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RefillAck.Unmarshal(m, b)
 }
 func (m *RefillAck) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_RefillAck.Marshal(b, m, deterministic)
 }
-func (dst *RefillAck) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RefillAck.Merge(dst, src)
+func (m *RefillAck) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RefillAck.Merge(m, src)
 }
 func (m *RefillAck) XXX_Size() int {
 	return xxx_messageInfo_RefillAck.Size(m)
@@ -149,9 +153,9 @@ func init() {
 	proto.RegisterType((*RefillAck)(nil), "event.RefillAck")
 }
 
-func init() { proto.RegisterFile("event.proto", fileDescriptor_event_f6a06832078200ee) }
+func init() { proto.RegisterFile("event.proto", fileDescriptor_2d17a9d3f0ddf27e) }
 
-var fileDescriptor_event_f6a06832078200ee = []byte{
+var fileDescriptor_2d17a9d3f0ddf27e = []byte{
 	// 221 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x4c, 0x90, 0x31, 0x4b, 0x03, 0x41,
 	0x10, 0x46, 0xb9, 0x98, 0xbb, 0x78, 0x93, 0x6e, 0x10, 0x99, 0xc2, 0x22, 0x04, 0x0b, 0xab, 0x6b,

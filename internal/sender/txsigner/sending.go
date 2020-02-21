@@ -24,7 +24,7 @@ func (s *Signer) processSendingRequest(snd *types.Sending, currentBlock *big.Int
 	logger := s.logger.WithField("id", snd.ID)
 
 	// ensure destination is approved
-	if snd.Token == mint.TokenGOLD {
+	if snd.Token == mint.TokenGOLD && !snd.IgnoreApprovement {
 		ctx, conn, cls, err := s.pool.Conn()
 		if err != nil {
 			logger.WithError(err).Errorf("Failed to get free connection")
@@ -57,7 +57,7 @@ func (s *Signer) processSendingRequest(snd *types.Sending, currentBlock *big.Int
 
 	// new tx: pick a signer
 	if snd.Sender == nil {
-		p, err := s.pickSendingSigner(snd.Amount, snd.Token)
+		p, err := s.pickSendingSigner(snd.Amount, snd.Token, snd.IgnoreApprovement)
 		if err != nil {
 			logger.WithError(err).Errorf("Failed to pick signer")
 			return false
@@ -202,13 +202,15 @@ func (s *Signer) processSendingRequest(snd *types.Sending, currentBlock *big.Int
 }
 
 // pickSendingSigner picks appropriate signer
-func (s *Signer) pickSendingSigner(a *amount.Amount, t mint.Token) (mint.PublicKey, error) {
+func (s *Signer) pickSendingSigner(a *amount.Amount, t mint.Token, emitterRequired bool) (mint.PublicKey, error) {
 
+	// all signers
 	sorted := make([]mint.PublicKey, 0)
 	for _, v := range s.signers {
 		sorted = append(sorted, v.public)
 	}
 
+	// sort by number of signed requests (asc)
 	sort.Slice(sorted, func(i, j int) bool {
 		s1 := s.signers[sorted[i]]
 		s2 := s.signers[sorted[j]]
@@ -218,9 +220,12 @@ func (s *Signer) pickSendingSigner(a *amount.Amount, t mint.Token) (mint.PublicK
 	for _, pub := range sorted {
 		v := s.signers[pub]
 
-		if v.failed {
+		// emitter required
+		if emitterRequired && !v.emitter {
 			continue
 		}
+
+		// emitter has priority (no need to check balance)
 		if v.emitter {
 			return v.public, nil
 		}

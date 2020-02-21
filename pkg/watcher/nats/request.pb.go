@@ -3,9 +3,11 @@
 
 package watcher
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // AddRemove is a request to the service to add or remove a wallet by it's public key
 type AddRemove struct {
@@ -32,16 +34,17 @@ func (m *AddRemove) Reset()         { *m = AddRemove{} }
 func (m *AddRemove) String() string { return proto.CompactTextString(m) }
 func (*AddRemove) ProtoMessage()    {}
 func (*AddRemove) Descriptor() ([]byte, []int) {
-	return fileDescriptor_request_4d73036cfa1f9269, []int{0}
+	return fileDescriptor_7f73548e33e655fe, []int{0}
 }
+
 func (m *AddRemove) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AddRemove.Unmarshal(m, b)
 }
 func (m *AddRemove) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_AddRemove.Marshal(b, m, deterministic)
 }
-func (dst *AddRemove) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AddRemove.Merge(dst, src)
+func (m *AddRemove) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AddRemove.Merge(m, src)
 }
 func (m *AddRemove) XXX_Size() int {
 	return xxx_messageInfo_AddRemove.Size(m)
@@ -86,16 +89,17 @@ func (m *AddRemoveReply) Reset()         { *m = AddRemoveReply{} }
 func (m *AddRemoveReply) String() string { return proto.CompactTextString(m) }
 func (*AddRemoveReply) ProtoMessage()    {}
 func (*AddRemoveReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_request_4d73036cfa1f9269, []int{1}
+	return fileDescriptor_7f73548e33e655fe, []int{1}
 }
+
 func (m *AddRemoveReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AddRemoveReply.Unmarshal(m, b)
 }
 func (m *AddRemoveReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_AddRemoveReply.Marshal(b, m, deterministic)
 }
-func (dst *AddRemoveReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AddRemoveReply.Merge(dst, src)
+func (m *AddRemoveReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AddRemoveReply.Merge(m, src)
 }
 func (m *AddRemoveReply) XXX_Size() int {
 	return xxx_messageInfo_AddRemoveReply.Size(m)
@@ -125,9 +129,9 @@ func init() {
 	proto.RegisterType((*AddRemoveReply)(nil), "request.AddRemoveReply")
 }
 
-func init() { proto.RegisterFile("request.proto", fileDescriptor_request_4d73036cfa1f9269) }
+func init() { proto.RegisterFile("request.proto", fileDescriptor_7f73548e33e655fe) }
 
-var fileDescriptor_request_4d73036cfa1f9269 = []byte{
+var fileDescriptor_7f73548e33e655fe = []byte{
 	// 191 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x2d, 0x4a, 0x2d, 0x2c,
 	0x4d, 0x2d, 0x2e, 0xd1, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x87, 0x72, 0x95, 0x42, 0xb9,

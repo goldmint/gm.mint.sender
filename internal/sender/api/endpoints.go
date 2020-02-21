@@ -8,16 +8,17 @@ import (
 )
 
 // EnqueueSending adds a sending to the sender queue
-func (a *API) EnqueueSending(trans types.SendingTransport, id, service, callbackURL string, to mint.PublicKey, amo *amount.Amount, token mint.Token) (dup, success bool) {
+func (a *API) EnqueueSending(trans types.SendingTransport, id, service, callbackURL string, to mint.PublicKey, amo *amount.Amount, token mint.Token, ignoreApprovement bool) (dup, success bool) {
 	snd := &types.Sending{
-		Transport:   trans,
-		Status:      types.SendingEnqueued,
-		To:          to,
-		Token:       token,
-		Amount:      amount.FromAmount(amo),
-		Service:     service,
-		RequestID:   id,
-		CallbackURL: callbackURL,
+		Transport:         trans,
+		Status:            types.SendingEnqueued,
+		To:                to,
+		Token:             token,
+		Amount:            amount.FromAmount(amo),
+		IgnoreApprovement: ignoreApprovement,
+		Service:           service,
+		RequestID:         id,
+		CallbackURL:       callbackURL,
 	}
 
 	if err := a.dao.PutSending(snd); err != nil {
