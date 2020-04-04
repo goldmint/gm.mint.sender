@@ -1,6 +1,6 @@
 module github.com/void616/gm.mint.sender
 
-go 1.12
+go 1.14
 
 require (
 	cloud.google.com/go v0.38.0

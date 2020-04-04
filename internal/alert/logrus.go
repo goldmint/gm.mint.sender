@@ -25,67 +25,37 @@ func NewLogrus(logger *logrus.Entry) *LogrusAlerter {
 }
 
 // Info implementation
-func (a *LogrusAlerter) Info(f string, arg ...interface{}) error {
+func (a *LogrusAlerter) Info(f string, arg ...interface{}) {
 	a.logger.Infof(f, arg...)
-	return nil
 }
 
 // Warn implementation
-func (a *LogrusAlerter) Warn(f string, arg ...interface{}) error {
+func (a *LogrusAlerter) Warn(f string, arg ...interface{}) {
 	a.logger.Warnf(f, arg...)
-	return nil
 }
 
 // Error implementation
-func (a *LogrusAlerter) Error(f string, arg ...interface{}) error {
+func (a *LogrusAlerter) Error(f string, arg ...interface{}) {
 	a.logger.Errorf(f, arg...)
-	return nil
 }
 
 // LimitInfo implementation
-func (a *LogrusAlerter) LimitInfo(max time.Duration, f string, arg ...interface{}) error {
-	if a.limiter.limit(max, "") {
-		return a.Info(f, arg...)
+func (a *LogrusAlerter) LimitInfo(max time.Duration, f string, arg ...interface{}) {
+	if a.limiter.limit(max, f, arg...) {
+		a.Info(f, arg...)
 	}
-	return nil
 }
 
 // LimitWarn implementation
-func (a *LogrusAlerter) LimitWarn(max time.Duration, f string, arg ...interface{}) error {
-	if a.limiter.limit(max, "") {
-		return a.Warn(f, arg...)
+func (a *LogrusAlerter) LimitWarn(max time.Duration, f string, arg ...interface{}) {
+	if a.limiter.limit(max, f, arg...) {
+		a.Warn(f, arg...)
 	}
-	return nil
 }
 
 // LimitError implementation
-func (a *LogrusAlerter) LimitError(max time.Duration, f string, arg ...interface{}) error {
-	if a.limiter.limit(max, "") {
-		return a.Error(f, arg...)
+func (a *LogrusAlerter) LimitError(max time.Duration, f string, arg ...interface{}) {
+	if a.limiter.limit(max, f, arg...) {
+		a.Error(f, arg...)
 	}
-	return nil
-}
-
-// LimitTagInfo implementation
-func (a *LogrusAlerter) LimitTagInfo(max time.Duration, tag, f string, arg ...interface{}) error {
-	if a.limiter.limit(max, tag) {
-		return a.Info(f, arg...)
-	}
-	return nil
-}
-
-// LimitTagWarn implementation
-func (a *LogrusAlerter) LimitTagWarn(max time.Duration, tag, f string, arg ...interface{}) error {
-	if a.limiter.limit(max, tag) {
-		return a.Warn(f, arg...)
-	}
-	return nil
-}
-
-// LimitTagError implementation
-func (a *LogrusAlerter) LimitTagError(max time.Duration, tag, f string, arg ...interface{}) error {
-	if a.limiter.limit(max, tag) {
-		return a.Error(f, arg...)
-	}
-	return nil
 }

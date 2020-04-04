@@ -153,9 +153,3 @@ Packages unit tests:
 ```sh
 make test
 ```
-
-## TODO
-
-- [x] Instrumenting (Prometheus)
-- [x] HTTP API
-- [ ] More DB drivers 

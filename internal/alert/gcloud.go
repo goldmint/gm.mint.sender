@@ -9,6 +9,7 @@ import (
 
 	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/pubsub"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
 )
@@ -24,114 +25,95 @@ func OnGCE() bool {
 
 // GCloudAlerter sends alerts via Google Cloud Pub/Sub
 type GCloudAlerter struct {
-	origin    string
-	projectID string
-	topic     string
-	limiter   *timeLimiter
+	logger  *logrus.Entry
+	origin  string
+	client  *pubsub.Client
+	topic   *pubsub.Topic
+	limiter *timeLimiter
 }
 
 // NewGCloud instance
-func NewGCloud(origin string) (*GCloudAlerter, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
+func NewGCloud(origin string, logger *logrus.Entry) (*GCloudAlerter, func(), error) {
 
-	creds, err := google.FindDefaultCredentials(ctx, compute.ComputeScope)
+	// creds
+	ctx1, cancel1 := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel1()
+	creds, err := google.FindDefaultCredentials(ctx1, compute.ComputeScope)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
+
+	// new cli
+	ctx2, cancel2 := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel2()
+	cli, err := pubsub.NewClient(ctx2, creds.ProjectID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// check topic
+	ctx3, cancel3 := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel3()
+	topic := cli.Topic("admin_alert.telegram")
+	ok, err := topic.Exists(ctx3)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !ok {
+		return nil, nil, fmt.Errorf("topic does not exist")
+	}
+
 	return &GCloudAlerter{
-		topic:     "admin_alert.telegram",
-		projectID: creds.ProjectID,
-		origin:    origin,
-		limiter:   newTimeLimiter(),
-	}, nil
+			logger:  logger,
+			client:  cli,
+			topic:   topic,
+			origin:  origin,
+			limiter: newTimeLimiter(),
+		}, func() {
+			topic.Stop()
+			cli.Close()
+		}, nil
 }
 
 // Info implementation
-func (a *GCloudAlerter) Info(f string, arg ...interface{}) error {
-	return a.send("info", f, arg...)
+func (a *GCloudAlerter) Info(f string, arg ...interface{}) {
+	a.send("info", f, arg...)
 }
 
 // Warn implementation
-func (a *GCloudAlerter) Warn(f string, arg ...interface{}) error {
-	return a.send("warning", f, arg...)
+func (a *GCloudAlerter) Warn(f string, arg ...interface{}) {
+	a.send("warning", f, arg...)
 }
 
 // Errorf implementation
-func (a *GCloudAlerter) Error(f string, arg ...interface{}) error {
-	return a.send("error", f, arg...)
+func (a *GCloudAlerter) Error(f string, arg ...interface{}) {
+	a.send("error", f, arg...)
 }
 
 // LimitInfo implementation
-func (a *GCloudAlerter) LimitInfo(max time.Duration, f string, arg ...interface{}) error {
-	if a.limiter.limit(max, "") {
-		return a.Info(f, arg...)
+func (a *GCloudAlerter) LimitInfo(max time.Duration, f string, arg ...interface{}) {
+	if a.limiter.limit(max, f, arg...) {
+		a.Info(f, arg...)
 	}
-	return nil
 }
 
 // LimitWarn implementation
-func (a *GCloudAlerter) LimitWarn(max time.Duration, f string, arg ...interface{}) error {
-	if a.limiter.limit(max, "") {
-		return a.Warn(f, arg...)
+func (a *GCloudAlerter) LimitWarn(max time.Duration, f string, arg ...interface{}) {
+	if a.limiter.limit(max, f, arg...) {
+		a.Warn(f, arg...)
 	}
-	return nil
 }
 
 // LimitError implementation
-func (a *GCloudAlerter) LimitError(max time.Duration, f string, arg ...interface{}) error {
-	if a.limiter.limit(max, "") {
-		return a.Error(f, arg...)
+func (a *GCloudAlerter) LimitError(max time.Duration, f string, arg ...interface{}) {
+	if a.limiter.limit(max, f, arg...) {
+		a.Error(f, arg...)
 	}
-	return nil
-}
-
-// LimitTagInfo implementation
-func (a *GCloudAlerter) LimitTagInfo(max time.Duration, tag, f string, arg ...interface{}) error {
-	if a.limiter.limit(max, tag) {
-		return a.Info(f, arg...)
-	}
-	return nil
-}
-
-// LimitTagWarn implementation
-func (a *GCloudAlerter) LimitTagWarn(max time.Duration, tag, f string, arg ...interface{}) error {
-	if a.limiter.limit(max, tag) {
-		return a.Warn(f, arg...)
-	}
-	return nil
-}
-
-// LimitTagError implementation
-func (a *GCloudAlerter) LimitTagError(max time.Duration, tag, f string, arg ...interface{}) error {
-	if a.limiter.limit(max, tag) {
-		return a.Error(f, arg...)
-	}
-	return nil
 }
 
 // ---
 
-func (a *GCloudAlerter) send(level string, f string, arg ...interface{}) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
-	defer cancel()
-
-	// new cli
-	cli, err := pubsub.NewClient(ctx, a.projectID)
-	if err != nil {
-		return err
-	}
-
-	// check topic
-	topic := cli.Topic(a.topic)
-	ok, err := topic.Exists(ctx)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return fmt.Errorf("topic doesn't exist")
-	}
-
+func (a *GCloudAlerter) send(level string, f string, arg ...interface{}) {
 	// message
 	data := struct {
 		From    string `json:"from"`
@@ -144,12 +126,18 @@ func (a *GCloudAlerter) send(level string, f string, arg ...interface{}) error {
 	}
 	b, err := json.Marshal(data)
 	if err != nil {
-		return err
+		a.logger.WithError(err).Errorf("Failed to marshal message")
+		return
 	}
 
-	result := cli.Topic(a.topic).Publish(ctx, &pubsub.Message{
+	// publish
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	result := a.topic.Publish(ctx, &pubsub.Message{
 		Data: b,
 	})
-	<-result.Ready()
-	return nil
+	if _, err := result.Get(ctx); err != nil {
+		a.logger.WithError(err).Errorf("Failed to publish message")
+		return
+	}
 }

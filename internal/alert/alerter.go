@@ -10,15 +10,12 @@ var (
 
 // Alerter sends messages to the administrator
 type Alerter interface {
-	Info(f string, arg ...interface{}) error
-	Warn(f string, arg ...interface{}) error
-	Error(f string, arg ...interface{}) error
-	LimitWarn(max time.Duration, f string, arg ...interface{}) error
-	LimitInfo(max time.Duration, f string, arg ...interface{}) error
-	LimitError(max time.Duration, f string, arg ...interface{}) error
-	LimitTagWarn(max time.Duration, tag string, f string, arg ...interface{}) error
-	LimitTagInfo(max time.Duration, tag string, f string, arg ...interface{}) error
-	LimitTagError(max time.Duration, tag string, f string, arg ...interface{}) error
+	Info(f string, arg ...interface{})
+	Warn(f string, arg ...interface{})
+	Error(f string, arg ...interface{})
+	LimitWarn(max time.Duration, f string, arg ...interface{})
+	LimitInfo(max time.Duration, f string, arg ...interface{})
+	LimitError(max time.Duration, f string, arg ...interface{})
 }
 
 // ---
@@ -28,46 +25,25 @@ type Null struct {
 }
 
 // Info implementation
-func (a *Null) Info(_ string, _ ...interface{}) error {
-	return nil
+func (a *Null) Info(_ string, _ ...interface{}) {
 }
 
 // Warn implementation
-func (a *Null) Warn(_ string, _ ...interface{}) error {
-	return nil
+func (a *Null) Warn(_ string, _ ...interface{}) {
 }
 
 // Error implementation
-func (a *Null) Error(_ string, _ ...interface{}) error {
-	return nil
+func (a *Null) Error(_ string, _ ...interface{}) {
 }
 
 // LimitInfo implementation
-func (a *Null) LimitInfo(_ time.Duration, _ string, _ ...interface{}) error {
-	return nil
+func (a *Null) LimitInfo(_ time.Duration, _ string, _ ...interface{}) {
 }
 
 // LimitWarn implementation
-func (a *Null) LimitWarn(_ time.Duration, _ string, _ ...interface{}) error {
-	return nil
+func (a *Null) LimitWarn(_ time.Duration, _ string, _ ...interface{}) {
 }
 
 // LimitError implementation
-func (a *Null) LimitError(_ time.Duration, _ string, _ ...interface{}) error {
-	return nil
-}
-
-// LimitTagInfo implementation
-func (a *Null) LimitTagInfo(_ time.Duration, _, _ string, _ ...interface{}) error {
-	return nil
-}
-
-// LimitTagWarn implementation
-func (a *Null) LimitTagWarn(_ time.Duration, _, _ string, _ ...interface{}) error {
-	return nil
-}
-
-// LimitTagError implementation
-func (a *Null) LimitTagError(_ time.Duration, _, _ string, _ ...interface{}) error {
-	return nil
+func (a *Null) LimitError(_ time.Duration, _ string, _ ...interface{}) {
 }

@@ -2,7 +2,6 @@ package alert
 
 import (
 	"fmt"
-	"runtime"
 	"sync"
 	"time"
 )
@@ -18,12 +17,8 @@ func newTimeLimiter() *timeLimiter {
 	}
 }
 
-func (l *timeLimiter) limit(max time.Duration, tag string) bool {
-	_, file, line, ok := runtime.Caller(2)
-	if !ok {
-		return true
-	}
-	source := fmt.Sprintf("%v:%v+%v", file, line, tag)
+func (l *timeLimiter) limit(max time.Duration, f string, arg ...interface{}) bool {
+	source := fmt.Sprintf(f, arg...)
 
 	l.lock.Lock()
 	defer l.lock.Unlock()

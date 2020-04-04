@@ -120,10 +120,11 @@ func main() {
 	var alerter alert.Alerter
 	{
 		if conf.GCloudAlerts && alert.OnGCE() {
-			a, err := alert.NewGCloud("MintSender Watcher")
+			a, cls, err := alert.NewGCloud("MintSender Watcher", logger.WithField("gce_alert", ""))
 			if err != nil {
 				logger.WithError(err).Fatal("Failed to setup Google Cloud alerts")
 			}
+			defer cls()
 			alerter = a
 		} else {
 			alerter = alert.NewLogrus(logger.WithField("alert", ""))
