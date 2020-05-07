@@ -136,14 +136,11 @@ func main() {
 	var senderSigners []*signer.Signer
 	{
 		for i, k := range conf.Wallets {
-			b, err := mint.Unpack58(k)
+			pvt, err := mint.ParsePrivateKey(k)
 			if err != nil {
 				logger.WithError(err).Fatalf("Invalid sender private key at index %v", i)
 			}
-			sig, err := signer.FromBytes(b)
-			if err != nil {
-				logger.WithError(err).Fatalf("Invalid sender private key at index %v", i)
-			}
+			sig := signer.FromPrivateKey(pvt)
 			senderSigners = append(senderSigners, sig)
 		}
 		if len(senderSigners) == 0 {
