@@ -55,7 +55,5 @@ $(TARGETS):
 image:
 	docker build -t $(GM_DOCKER_PREFIX)/mintsender-watcher:$(BRANCH) -f ./build/dockerfile-watcher-linux-amd64 .
 	docker build -t $(GM_DOCKER_PREFIX)/mintsender-sender:$(BRANCH) -f ./build/dockerfile-sender-linux-amd64 .
-	
-push:
 	docker push $(GM_DOCKER_PREFIX)/mintsender-watcher:$(BRANCH)
 	docker push $(GM_DOCKER_PREFIX)/mintsender-sender:$(BRANCH)

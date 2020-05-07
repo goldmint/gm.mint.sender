@@ -9,7 +9,7 @@ import (
 var migrations = []*gormigrate.Migration{
 
 	// initial
-	&gormigrate.Migration{
+	{
 		ID: "2019-09-26T13:20:00.350Z",
 		Migrate: func(tx *gorm.DB) error {
 			return tx.
@@ -34,7 +34,7 @@ var migrations = []*gormigrate.Migration{
 	},
 
 	// sendings: optional wallet approvement ignoring
-	&gormigrate.Migration{
+	{
 		ID: "2020-02-21T20:12:48.866Z",
 		Migrate: func(tx *gorm.DB) error {
 			return tx.

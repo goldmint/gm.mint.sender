@@ -9,7 +9,7 @@ import (
 var migrations = []*gormigrate.Migration{
 
 	// initial
-	&gormigrate.Migration{
+	{
 		ID: "2019-09-27T10:08:24.153Z",
 		Migrate: func(tx *gorm.DB) error {
 			return tx.
