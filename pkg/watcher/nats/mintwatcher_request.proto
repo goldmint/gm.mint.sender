@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package request;
 
-option go_package = "watcher";
+option go_package = ".;watcher";
 option csharp_namespace = "MintSender.Watcher.Request";
 
 // AddRemove is a request to the service to add or remove a wallet by it's public key

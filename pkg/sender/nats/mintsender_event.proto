@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package event;
 
-option go_package = "sender";
+option go_package = ".;sender";
 option csharp_namespace = "MintSender.Sender.Event";
 
 // Sent is an event from the service notifying about a wallet sending transaction result

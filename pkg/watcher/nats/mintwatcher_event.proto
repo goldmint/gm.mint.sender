@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package event;
 
-option go_package = "watcher";
+option go_package = ".;watcher";
 option csharp_namespace = "MintSender.Watcher.Event";
 
 // Refill is an event from the service notifying about a wallet refilling transaction

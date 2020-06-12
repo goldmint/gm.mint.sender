@@ -1,7 +1,7 @@
 package sender
 
-//go:generate protoc --go_out=. request.proto
-//go:generate protoc --go_out=. event.proto
+//go:generate protoc --go_out=. mintsender_request.proto
+//go:generate protoc --go_out=. mintsender_event.proto
 
 // Subject getter
 func (m Send) Subject() string { return "mintsender.sender.send" }
